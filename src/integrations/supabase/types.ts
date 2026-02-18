@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      branch_coin_transactions: {
+        Row: {
+          branch_id: string
+          coins: number
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+        }
+        Insert: {
+          branch_id: string
+          coins: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+        }
+        Update: {
+          branch_id?: string
+          coins?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "branch_coin_transactions_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "branch_coin_transactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       branch_users: {
         Row: {
           branch_id: string
@@ -430,6 +472,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_branch_coin_balance: { Args: { _branch_id: string }; Returns: number }
       get_branch_id_for_user: { Args: { _user_id: string }; Returns: string }
       get_customer_id_for_user: { Args: { _user_id: string }; Returns: string }
       get_user_role: {

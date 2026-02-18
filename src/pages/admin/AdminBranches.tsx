@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
-import { Building2, Plus, UserPlus, Trash2, Search } from "lucide-react";
+import { Building2, Plus, UserPlus, Trash2, Search, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,10 +19,13 @@ export default function AdminBranches() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState<string | null>(null);
+  const [coinOpen, setCoinOpen] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", address: "", city: "", phone: "", manager_name: "" });
   const [searchPhone, setSearchPhone] = useState("");
   const [foundUser, setFoundUser] = useState<any>(null);
   const [searching, setSearching] = useState(false);
+  const [coinAmount, setCoinAmount] = useState("");
+  const [coinDescription, setCoinDescription] = useState("");
 
   const { data: branches, isLoading } = useQuery({
     queryKey: ["admin-branches"],
@@ -39,6 +42,22 @@ export default function AdminBranches() {
       const { data, error } = await supabase.from("branch_users").select("*, profiles:user_id(full_name, phone)");
       if (error) throw error;
       return data ?? [];
+    },
+  });
+
+  // Fetch coin balances for all branches
+  const { data: coinBalances } = useQuery({
+    queryKey: ["admin-branch-coin-balances"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("branch_coin_transactions")
+        .select("branch_id, coins");
+      if (error) throw error;
+      const balances: Record<string, number> = {};
+      (data ?? []).forEach((t: any) => {
+        balances[t.branch_id] = (balances[t.branch_id] || 0) + t.coins;
+      });
+      return balances;
     },
   });
 
@@ -110,6 +129,30 @@ export default function AdminBranches() {
     },
   });
 
+  const creditCoins = useMutation({
+    mutationFn: async (branchId: string) => {
+      const amount = parseInt(coinAmount);
+      if (!amount || amount <= 0) throw new Error("Enter a valid coin amount");
+      const { error } = await supabase.from("branch_coin_transactions").insert({
+        branch_id: branchId,
+        coins: amount,
+        description: coinDescription.trim() || `Manual credit by admin`,
+        created_by: user!.id,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-branch-coin-balances"] });
+      toast({ title: "Coins credited to branch!" });
+      setCoinOpen(null);
+      setCoinAmount("");
+      setCoinDescription("");
+    },
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
   const getBranchUser = (branchId: string) => {
     return branchUsers?.find((bu: any) => bu.branch_id === branchId);
   };
@@ -159,6 +202,7 @@ export default function AdminBranches() {
           <div className="grid md:grid-cols-2 gap-4">
             {branches.map((b: any) => {
               const bu = getBranchUser(b.id);
+              const balance = coinBalances?.[b.id] ?? 0;
               return (
                 <div key={b.id} className="rounded-2xl border border-border bg-card p-5 shadow-card">
                   <div className="flex items-start justify-between mb-2">
@@ -193,6 +237,52 @@ export default function AdminBranches() {
                   {b.address && <p className="text-xs text-muted-foreground">{b.address}{b.city ? `, ${b.city}` : ""}</p>}
                   {b.phone && <p className="text-xs text-muted-foreground mt-1">📞 {b.phone}</p>}
                   {b.manager_name && <p className="text-xs text-muted-foreground">Manager: {b.manager_name}</p>}
+
+                  {/* Coin balance */}
+                  <div className="mt-2 flex items-center gap-2">
+                    <Coins className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-semibold text-foreground">{balance.toLocaleString()} coins</span>
+                    <Dialog open={coinOpen === b.id} onOpenChange={(v) => { setCoinOpen(v ? b.id : null); if (!v) { setCoinAmount(""); setCoinDescription(""); } }}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="ml-auto gap-1 text-xs">
+                          <Coins className="h-3 w-3" /> Give Coins
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Credit Coins to "{b.name}"</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3">
+                          <p className="text-xs text-muted-foreground">Current balance: {balance.toLocaleString()} coins</p>
+                          <div className="space-y-1">
+                            <Label>Coins to Credit</Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={coinAmount}
+                              onChange={(e) => setCoinAmount(e.target.value)}
+                              placeholder="e.g. 1000"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label>Description (optional)</Label>
+                            <Input
+                              value={coinDescription}
+                              onChange={(e) => setCoinDescription(e.target.value)}
+                              placeholder="e.g. Monthly allocation"
+                            />
+                          </div>
+                          <Button
+                            onClick={() => creditCoins.mutate(b.id)}
+                            disabled={creditCoins.isPending || !coinAmount || parseInt(coinAmount) <= 0}
+                            className="w-full"
+                          >
+                            {creditCoins.isPending ? "Crediting..." : "Credit Coins"}
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
 
                   <div className="mt-3 pt-3 border-t border-border">
                     {bu ? (

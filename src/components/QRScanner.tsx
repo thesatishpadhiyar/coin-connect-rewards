@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { Button } from "@/components/ui/button";
 import { Camera, X } from "lucide-react";
@@ -10,35 +10,62 @@ interface QRScannerProps {
 
 export default function QRScanner({ onScan, onClose }: QRScannerProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const onScanRef = useRef(onScan);
+  onScanRef.current = onScan;
   const [error, setError] = useState("");
+  const [starting, setStarting] = useState(true);
 
   useEffect(() => {
-    const scanner = new Html5Qrcode("qr-reader");
-    scannerRef.current = scanner;
+    let cancelled = false;
+    const elementId = "qr-reader";
 
-    scanner
-      .start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText) => {
-          // Expected format: COIN:<customer_id>
-          if (decodedText.startsWith("COIN:")) {
-            const customerId = decodedText.replace("COIN:", "");
-            scanner.stop().catch(() => {});
-            onScan(customerId);
+    // Small delay to ensure DOM element is mounted
+    const timeout = setTimeout(() => {
+      if (cancelled) return;
+      const el = document.getElementById(elementId);
+      if (!el) {
+        setError("Scanner could not initialize. Please try again.");
+        setStarting(false);
+        return;
+      }
+
+      const scanner = new Html5Qrcode(elementId);
+      scannerRef.current = scanner;
+
+      scanner
+        .start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 220, height: 220 } },
+          (decodedText) => {
+            if (decodedText.startsWith("COIN:")) {
+              const customerId = decodedText.replace("COIN:", "");
+              scanner.stop().catch(() => {});
+              onScanRef.current(customerId);
+            }
+          },
+          () => {}
+        )
+        .then(() => {
+          if (!cancelled) setStarting(false);
+        })
+        .catch((err) => {
+          if (!cancelled) {
+            setError("Camera access denied. Please allow camera permission or use phone number instead.");
+            setStarting(false);
           }
-        },
-        () => {} // ignore scan failures
-      )
-      .catch((err) => {
-        setError("Camera access denied. Please allow camera permission or use phone number instead.");
-        console.error("QR Scanner error:", err);
-      });
+          console.error("QR Scanner error:", err);
+        });
+    }, 300);
 
     return () => {
-      scanner.stop().catch(() => {});
+      cancelled = true;
+      clearTimeout(timeout);
+      if (scannerRef.current) {
+        scannerRef.current.stop().catch(() => {});
+        scannerRef.current = null;
+      }
     };
-  }, [onScan]);
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -56,11 +83,18 @@ export default function QRScanner({ onScan, onClose }: QRScannerProps) {
           {error}
         </div>
       ) : (
-        <div
-          id="qr-reader"
-          className="rounded-xl overflow-hidden mx-auto"
-          style={{ width: "100%", maxWidth: 300 }}
-        />
+        <>
+          {starting && (
+            <div className="text-center text-sm text-muted-foreground py-4">
+              Starting camera...
+            </div>
+          )}
+          <div
+            id="qr-reader"
+            className="rounded-xl overflow-hidden mx-auto"
+            style={{ width: "100%", maxWidth: 300, minHeight: starting ? 0 : 300 }}
+          />
+        </>
       )}
       <p className="text-xs text-muted-foreground text-center">
         Point the camera at the customer's QR code

@@ -3,11 +3,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
-import { Building2, Plus, UserPlus } from "lucide-react";
+import { Building2, Plus, UserPlus, Trash2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +20,9 @@ export default function AdminBranches() {
   const [open, setOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", address: "", city: "", phone: "", manager_name: "" });
-  const [branchUserForm, setBranchUserForm] = useState({ phone: "", password: "", full_name: "" });
+  const [searchPhone, setSearchPhone] = useState("");
+  const [foundUser, setFoundUser] = useState<any>(null);
+  const [searching, setSearching] = useState(false);
 
   const { data: branches, isLoading } = useQuery({
     queryKey: ["admin-branches"],
@@ -58,20 +61,49 @@ export default function AdminBranches() {
     },
   });
 
-  const createBranchUser = useMutation({
+  const deleteBranch = useMutation({
     mutationFn: async (branchId: string) => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await supabase.functions.invoke("create-branch-user", {
-        body: { phone: branchUserForm.phone, password: branchUserForm.password, full_name: branchUserForm.full_name, branch_id: branchId },
+      const { error } = await supabase.from("branches").delete().eq("id", branchId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-branches"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-branch-users"] });
+      toast({ title: "Branch deleted!" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const searchUser = async () => {
+    if (!searchPhone.trim()) return;
+    setSearching(true);
+    setFoundUser(null);
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, full_name, phone, role")
+      .eq("phone", searchPhone.trim())
+      .single();
+    setFoundUser(data || null);
+    if (!data) toast({ title: "No user found with this phone number", variant: "destructive" });
+    setSearching(false);
+  };
+
+  const assignUser = useMutation({
+    mutationFn: async (branchId: string) => {
+      const res = await supabase.functions.invoke("assign-branch-user", {
+        body: { user_id: foundUser.id, branch_id: branchId },
       });
       if (res.error) throw res.error;
       if (res.data?.error) throw new Error(res.data.error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-branch-users"] });
-      toast({ title: "Branch user created!" });
+      toast({ title: "User assigned to branch!" });
       setAssignOpen(null);
-      setBranchUserForm({ phone: "", password: "", full_name: "" });
+      setSearchPhone("");
+      setFoundUser(null);
     },
     onError: (err: any) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -131,9 +163,32 @@ export default function AdminBranches() {
                 <div key={b.id} className="rounded-2xl border border-border bg-card p-5 shadow-card">
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="font-semibold text-foreground">{b.name}</h3>
-                    <Badge variant={b.is_active ? "default" : "secondary"}>
-                      {b.is_active ? "Active" : "Inactive"}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={b.is_active ? "default" : "secondary"}>
+                        {b.is_active ? "Active" : "Inactive"}
+                      </Badge>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete "{b.name}"?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently delete this branch. This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteBranch.mutate(b.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                   {b.address && <p className="text-xs text-muted-foreground">{b.address}{b.city ? `, ${b.city}` : ""}</p>}
                   {b.phone && <p className="text-xs text-muted-foreground mt-1">📞 {b.phone}</p>}
@@ -141,42 +196,46 @@ export default function AdminBranches() {
 
                   <div className="mt-3 pt-3 border-t border-border">
                     {bu ? (
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">
-                          👤 {(bu as any).profiles?.full_name || (bu as any).profiles?.phone || "Branch User"}
-                        </Badge>
-                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        👤 {(bu as any).profiles?.full_name || (bu as any).profiles?.phone || "Branch User"}
+                      </Badge>
                     ) : (
-                      <Dialog open={assignOpen === b.id} onOpenChange={(v) => { setAssignOpen(v ? b.id : null); if (!v) setBranchUserForm({ phone: "", password: "", full_name: "" }); }}>
+                      <Dialog open={assignOpen === b.id} onOpenChange={(v) => { setAssignOpen(v ? b.id : null); if (!v) { setSearchPhone(""); setFoundUser(null); } }}>
                         <DialogTrigger asChild>
                           <Button variant="outline" size="sm" className="gap-1 text-xs">
-                            <UserPlus className="h-3 w-3" /> Assign Login
+                            <UserPlus className="h-3 w-3" /> Assign User
                           </Button>
                         </DialogTrigger>
                         <DialogContent>
                           <DialogHeader>
-                            <DialogTitle>Create Branch Login for "{b.name}"</DialogTitle>
+                            <DialogTitle>Assign User to "{b.name}"</DialogTitle>
                           </DialogHeader>
                           <div className="space-y-3">
-                            <div className="space-y-1">
-                              <Label>Full Name</Label>
-                              <Input value={branchUserForm.full_name} onChange={(e) => setBranchUserForm({ ...branchUserForm, full_name: e.target.value })} />
+                            <p className="text-xs text-muted-foreground">Search by mobile number of a registered user to assign them as branch manager.</p>
+                            <div className="flex gap-2">
+                              <Input
+                                value={searchPhone}
+                                onChange={(e) => setSearchPhone(e.target.value)}
+                                placeholder="Enter mobile number"
+                                onKeyDown={(e) => e.key === "Enter" && searchUser()}
+                              />
+                              <Button onClick={searchUser} disabled={searching} variant="secondary" size="icon">
+                                <Search className="h-4 w-4" />
+                              </Button>
                             </div>
-                            <div className="space-y-1">
-                              <Label>Mobile Number</Label>
-                              <Input value={branchUserForm.phone} onChange={(e) => setBranchUserForm({ ...branchUserForm, phone: e.target.value })} placeholder="9876543210" />
-                            </div>
-                            <div className="space-y-1">
-                              <Label>Password</Label>
-                              <Input type="password" value={branchUserForm.password} onChange={(e) => setBranchUserForm({ ...branchUserForm, password: e.target.value })} />
-                            </div>
-                            <Button
-                              onClick={() => createBranchUser.mutate(b.id)}
-                              disabled={createBranchUser.isPending || !branchUserForm.phone || !branchUserForm.password}
-                              className="w-full"
-                            >
-                              {createBranchUser.isPending ? "Creating..." : "Create Branch Login"}
-                            </Button>
+                            {foundUser && (
+                              <div className="rounded-xl border border-border bg-muted/50 p-3 space-y-2">
+                                <p className="text-sm font-medium text-foreground">{foundUser.full_name || "No name"}</p>
+                                <p className="text-xs text-muted-foreground">📞 {foundUser.phone}</p>
+                                <p className="text-xs text-muted-foreground">Current role: {foundUser.role}</p>
+                                {foundUser.role === "branch" && (
+                                  <p className="text-xs text-amber-600">⚠️ This user is already a branch user. They'll be reassigned.</p>
+                                )}
+                                <Button onClick={() => assignUser.mutate(b.id)} disabled={assignUser.isPending} className="w-full">
+                                  {assignUser.isPending ? "Assigning..." : "Assign to this Branch"}
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         </DialogContent>
                       </Dialog>

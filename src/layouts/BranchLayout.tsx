@@ -1,6 +1,6 @@
 import { ReactNode, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, ShoppingBag, FileText, Menu, X, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, ShoppingBag, FileText, Wallet, Menu, X, LogOut } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ const navItems = [
   { to: "/branch/customers", icon: Users, label: "Customers" },
   { to: "/branch/purchase/new", icon: ShoppingBag, label: "New Purchase" },
   { to: "/branch/purchases", icon: FileText, label: "Purchases" },
+  { to: "/branch/wallet", icon: Wallet, label: "Wallet" },
 ];
 
 export default function BranchLayout({ children }: { children: ReactNode }) {

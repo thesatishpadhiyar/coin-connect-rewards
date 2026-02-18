@@ -21,6 +21,7 @@ import BranchDashboard from "./pages/branch/BranchDashboard";
 import BranchNewPurchase from "./pages/branch/BranchNewPurchase";
 import BranchCustomers from "./pages/branch/BranchCustomers";
 import BranchPurchases from "./pages/branch/BranchPurchases";
+import BranchWallet from "./pages/branch/BranchWallet";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminBranches from "./pages/admin/AdminBranches";
@@ -57,6 +58,7 @@ const App = () => (
             <Route path="/branch/purchase/new" element={<ProtectedRoute allowedRoles={["branch"]}><BranchNewPurchase /></ProtectedRoute>} />
             <Route path="/branch/customers" element={<ProtectedRoute allowedRoles={["branch"]}><BranchCustomers /></ProtectedRoute>} />
             <Route path="/branch/purchases" element={<ProtectedRoute allowedRoles={["branch"]}><BranchPurchases /></ProtectedRoute>} />
+            <Route path="/branch/wallet" element={<ProtectedRoute allowedRoles={["branch"]}><BranchWallet /></ProtectedRoute>} />
 
             {/* Admin */}
             <Route path="/admin" element={<ProtectedRoute allowedRoles={["superadmin"]}><AdminDashboard /></ProtectedRoute>} />

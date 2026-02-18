@@ -106,7 +106,7 @@ export default function BranchNewPurchase() {
         .eq("customer_id", selectedCustomer.id)
         .limit(1);
       const isFirstPurchase = !prevPurchases || prevPurchases.length === 0;
-      const bonusCoins = isFirstPurchase ? welcomeBonus : 0;
+      const bonusCoins = 0; // Welcome bonus now given on signup, not first purchase
       const actualRedeem = redeemCoins && canRedeem ? clampedRedeem : 0;
 
       // Insert purchase
@@ -166,37 +166,40 @@ export default function BranchNewPurchase() {
         if (wtError) throw wtError;
       }
 
-      // Referral reward (first purchase only)
+      // Referral reward unlock (first purchase only)
+      // On signup, a pending referral_reward was already created.
+      // Now we unlock it: update status to "paid", set first_purchase_id, and credit coins.
       if (isFirstPurchase && selectedCustomer.referred_by_customer_id) {
-        const referralMinBill = settings?.referral_min_first_bill ?? 1000;
-        if (bill >= referralMinBill) {
-          const referrerCoins = settings?.referral_referrer_coins ?? 100;
-          const newCustCoins = settings?.referral_new_customer_coins ?? 50;
+        // Find pending referral reward for this new customer
+        const { data: pendingReward } = await supabase
+          .from("referral_rewards")
+          .select("*")
+          .eq("new_customer_id", selectedCustomer.id)
+          .eq("status", "pending")
+          .single();
 
-          await supabase.from("referral_rewards").insert({
-            referrer_customer_id: selectedCustomer.referred_by_customer_id,
-            new_customer_id: selectedCustomer.id,
-            first_purchase_id: purchase.id,
-            referrer_coins: referrerCoins,
-            new_customer_coins: newCustCoins,
-            status: "paid",
-          });
+        if (pendingReward) {
+          // Update to paid
+          await supabase.from("referral_rewards")
+            .update({ status: "paid", first_purchase_id: purchase.id })
+            .eq("id", pendingReward.id);
 
+          // Credit referrer's coins (were locked, now unlocked)
           await supabase.from("wallet_transactions").insert([
             {
-              customer_id: selectedCustomer.referred_by_customer_id,
+              customer_id: pendingReward.referrer_customer_id,
               branch_id: branchUser.branch_id,
               purchase_id: purchase.id,
               type: "REFERRAL",
-              coins: referrerCoins,
-              description: "Referral bonus - friend made first purchase",
+              coins: pendingReward.referrer_coins,
+              description: "Referral bonus unlocked - friend made first purchase",
             },
             {
               customer_id: selectedCustomer.id,
               branch_id: branchUser.branch_id,
               purchase_id: purchase.id,
               type: "REFERRAL",
-              coins: newCustCoins,
+              coins: pendingReward.new_customer_coins,
               description: "Referral bonus - first purchase reward",
             },
           ]);

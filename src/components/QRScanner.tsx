@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { Button } from "@/components/ui/button";
-import { Camera, X } from "lucide-react";
+import { Camera, X, AlertCircle } from "lucide-react";
 
 interface QRScannerProps {
-  onScan: (customerId: string) => void;
+  onScan: (phone: string) => void;
   onClose: () => void;
 }
 
@@ -14,52 +14,58 @@ export default function QRScanner({ onScan, onClose }: QRScannerProps) {
   onScanRef.current = onScan;
   const [error, setError] = useState("");
   const [starting, setStarting] = useState(true);
+  const mountedRef = useRef(true);
+  const scannedRef = useRef(false);
 
   useEffect(() => {
-    let cancelled = false;
-    const elementId = "qr-reader";
+    mountedRef.current = true;
+    let scanner: Html5Qrcode | null = null;
 
-    // Small delay to ensure DOM element is mounted
-    const timeout = setTimeout(() => {
-      if (cancelled) return;
-      const el = document.getElementById(elementId);
-      if (!el) {
-        setError("Scanner could not initialize. Please try again.");
-        setStarting(false);
-        return;
-      }
+    const startScanner = async () => {
+      try {
+        // Wait for DOM
+        await new Promise((r) => setTimeout(r, 500));
+        if (!mountedRef.current) return;
 
-      const scanner = new Html5Qrcode(elementId);
-      scannerRef.current = scanner;
+        const el = document.getElementById("qr-reader-container");
+        if (!el) {
+          if (mountedRef.current) setError("Scanner could not initialize.");
+          return;
+        }
 
-      scanner
-        .start(
+        scanner = new Html5Qrcode("qr-reader-container");
+        scannerRef.current = scanner;
+
+        await scanner.start(
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 220, height: 220 } },
           (decodedText) => {
+            if (scannedRef.current) return;
+            // Expected format: COIN:<phone>
             if (decodedText.startsWith("COIN:")) {
-              const customerId = decodedText.replace("COIN:", "");
-              scanner.stop().catch(() => {});
-              onScanRef.current(customerId);
+              scannedRef.current = true;
+              const phone = decodedText.replace("COIN:", "");
+              scanner?.stop().catch(() => {});
+              onScanRef.current(phone);
             }
           },
           () => {}
-        )
-        .then(() => {
-          if (!cancelled) setStarting(false);
-        })
-        .catch((err) => {
-          if (!cancelled) {
-            setError("Camera access denied. Please allow camera permission or use phone number instead.");
-            setStarting(false);
-          }
-          console.error("QR Scanner error:", err);
-        });
-    }, 300);
+        );
+
+        if (mountedRef.current) setStarting(false);
+      } catch (err: any) {
+        console.error("QR Scanner error:", err);
+        if (mountedRef.current) {
+          setError("Camera not available. Use phone number search instead.");
+          setStarting(false);
+        }
+      }
+    };
+
+    startScanner();
 
     return () => {
-      cancelled = true;
-      clearTimeout(timeout);
+      mountedRef.current = false;
       if (scannerRef.current) {
         scannerRef.current.stop().catch(() => {});
         scannerRef.current = null;
@@ -78,27 +84,36 @@ export default function QRScanner({ onScan, onClose }: QRScannerProps) {
           <X className="h-4 w-4" />
         </Button>
       </div>
+
       {error ? (
-        <div className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive text-center">
-          {error}
+        <div className="rounded-xl bg-destructive/10 p-4 text-center space-y-2">
+          <AlertCircle className="h-6 w-6 text-destructive mx-auto" />
+          <p className="text-sm text-destructive">{error}</p>
+          <Button variant="outline" size="sm" onClick={onClose}>
+            Use Phone Number
+          </Button>
         </div>
       ) : (
         <>
           {starting && (
-            <div className="text-center text-sm text-muted-foreground py-4">
-              Starting camera...
+            <div className="flex flex-col items-center gap-2 py-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+              <p className="text-sm text-muted-foreground">Starting camera...</p>
             </div>
           )}
           <div
-            id="qr-reader"
+            id="qr-reader-container"
             className="rounded-xl overflow-hidden mx-auto"
-            style={{ width: "100%", maxWidth: 300, minHeight: starting ? 0 : 300 }}
+            style={{ width: "100%", maxWidth: 300, minHeight: starting ? 0 : 280 }}
           />
         </>
       )}
-      <p className="text-xs text-muted-foreground text-center">
-        Point the camera at the customer's QR code
-      </p>
+
+      {!error && (
+        <p className="text-xs text-muted-foreground text-center">
+          Point the camera at the customer's QR code
+        </p>
+      )}
     </div>
   );
 }

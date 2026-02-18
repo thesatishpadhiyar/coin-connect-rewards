@@ -51,17 +51,25 @@ export default function BranchNewPurchase() {
     },
   });
 
-  const loadCustomerById = async (customerId: string) => {
-    const { data: cust } = await supabase.from("customers").select("*").eq("id", customerId).single();
+  const loadCustomerByPhone = async (phone: string) => {
+    const { data: profiles } = await supabase.from("profiles").select("id, full_name, phone").eq("phone", phone.trim());
+    if (!profiles || profiles.length === 0) {
+      toast({ title: "Customer not found", description: "No customer with this phone number", variant: "destructive" });
+      setShowScanner(false);
+      return;
+    }
+    const prof = profiles[0];
+    const { data: cust } = await supabase.from("customers").select("*").eq("user_id", prof.id).single();
     if (!cust) {
       toast({ title: "Customer not found", variant: "destructive" });
+      setShowScanner(false);
       return;
     }
     if (cust.is_blocked) {
       toast({ title: "Customer blocked", description: "This customer is blocked", variant: "destructive" });
+      setShowScanner(false);
       return;
     }
-    const { data: prof } = await supabase.from("profiles").select("id, full_name, phone").eq("id", cust.user_id!).single();
     setSelectedCustomer({ ...cust, profile: prof });
     const { data: txns } = await supabase.from("wallet_transactions").select("coins").eq("customer_id", cust.id);
     setWalletBalance(txns?.reduce((s: number, t: any) => s + t.coins, 0) ?? 0);
@@ -69,8 +77,8 @@ export default function BranchNewPurchase() {
     setStep("form");
   };
 
-  const handleQRScan = (customerId: string) => {
-    loadCustomerById(customerId);
+  const handleQRScan = (phone: string) => {
+    loadCustomerByPhone(phone);
   };
 
   const searchCustomer = async () => {

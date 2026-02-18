@@ -67,7 +67,11 @@ export default function QRScanner({ onScan, onClose }: QRScannerProps) {
     return () => {
       mountedRef.current = false;
       if (scannerRef.current) {
-        scannerRef.current.stop().catch(() => {});
+        try {
+          scannerRef.current.stop().catch(() => {});
+        } catch {
+          // Scanner wasn't running, ignore
+        }
         scannerRef.current = null;
       }
     };

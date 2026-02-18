@@ -1,14 +1,13 @@
-import { ReactNode, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { ReactNode } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Building2, Users, Gift, Settings, Menu, X, LogOut,
+  LayoutDashboard, Building2, Users, Gift, Settings, LogOut,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
 
 const navItems = [
-  { to: "/admin", icon: LayoutDashboard, label: "Dashboard", end: true },
+  { to: "/admin", icon: LayoutDashboard, label: "Home", end: true },
   { to: "/admin/branches", icon: Building2, label: "Branches" },
   { to: "/admin/customers", icon: Users, label: "Customers" },
   { to: "/admin/referrals", icon: Gift, label: "Referrals" },
@@ -17,63 +16,51 @@ const navItems = [
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const { signOut } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
 
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-64 flex-col border-r border-border bg-card p-4">
-        <div className="mb-6"><Logo size="sm" /></div>
-        <nav className="flex flex-1 flex-col gap-1">
-          {navItems.map(({ to, icon: Icon, label, end }) => (
-            <NavLink key={to} to={to} end={end}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`
-              }>
-              <Icon className="h-4 w-4" />{label}
-            </NavLink>
-          ))}
-        </nav>
-        <Button variant="ghost" onClick={signOut} className="justify-start gap-2 text-muted-foreground">
-          <LogOut className="h-4 w-4" />Sign out
-        </Button>
-      </aside>
+    <div className="flex min-h-screen flex-col bg-background">
+      {/* Top header */}
+      <header className="sticky top-0 z-40 border-b border-border bg-card/80 backdrop-blur-lg px-4 py-3 flex items-center justify-between">
+        <Logo size="sm" />
+        <button onClick={signOut} className="text-muted-foreground p-2" title="Sign out">
+          <LogOut className="h-4 w-4" />
+        </button>
+      </header>
 
-      {/* Mobile overlay */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-foreground/20 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
-          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-card p-4 animate-fade-in shadow-elevated">
-            <div className="flex items-center justify-between mb-6">
-              <Logo size="sm" />
-              <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)}><X className="h-5 w-5" /></Button>
-            </div>
-            <nav className="flex flex-col gap-1">
-              {navItems.map(({ to, icon: Icon, label, end }) => (
-                <NavLink key={to} to={to} end={end} onClick={() => setSidebarOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground"}`
-                  }>
-                  <Icon className="h-4 w-4" />{label}
-                </NavLink>
-              ))}
-            </nav>
-          </aside>
+      {/* Content */}
+      <main className="flex-1 px-4 pb-24 pt-4">
+        {children}
+      </main>
+
+      {/* Bottom nav */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-lg safe-area-bottom">
+        <div className="flex items-center justify-around py-2">
+          {navItems.map(({ to, icon: Icon, label, end }) => {
+            const isActive = end ? location.pathname === to : location.pathname.startsWith(to + "/") || location.pathname === to;
+            return (
+              <NavLink
+                key={to}
+                to={to}
+                className="flex flex-col items-center gap-0.5 px-3 py-1"
+              >
+                <Icon
+                  className={`h-5 w-5 transition-colors ${
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  }`}
+                />
+                <span
+                  className={`text-[10px] font-medium transition-colors ${
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  }`}
+                >
+                  {label}
+                </span>
+              </NavLink>
+            );
+          })}
         </div>
-      )}
-
-      <div className="flex flex-1 flex-col">
-        <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-lg px-4 py-3 lg:px-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}><Menu className="h-5 w-5" /></Button>
-              <span className="text-sm font-medium text-muted-foreground lg:hidden">Admin Panel</span>
-            </div>
-            <Button variant="ghost" size="icon" onClick={signOut} className="lg:hidden" title="Sign out"><LogOut className="h-4 w-4" /></Button>
-          </div>
-        </header>
-        <main className="flex-1 p-4 md:p-6">{children}</main>
-      </div>
+      </nav>
     </div>
   );
 }

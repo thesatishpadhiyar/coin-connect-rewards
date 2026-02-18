@@ -98,6 +98,7 @@ export type Database = {
           id: string
           is_active: boolean
           manager_name: string | null
+          map_link: string | null
           name: string
           phone: string | null
         }
@@ -109,6 +110,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           manager_name?: string | null
+          map_link?: string | null
           name: string
           phone?: string | null
         }
@@ -120,6 +122,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           manager_name?: string | null
+          map_link?: string | null
           name?: string
           phone?: string | null
         }

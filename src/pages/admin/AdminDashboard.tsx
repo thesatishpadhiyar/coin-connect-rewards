@@ -84,21 +84,21 @@ export default function AdminDashboard() {
         <div>
           <h3 className="text-sm font-semibold text-muted-foreground mb-3">Quick Actions</h3>
           <div className="grid grid-cols-2 gap-3">
-            <Button
-              variant="outline"
-              className="h-auto py-4 flex flex-col items-center gap-2 rounded-2xl"
-              onClick={() => navigate("/admin/branches")}
-            >
+            <Button variant="outline" className="h-auto py-4 flex flex-col items-center gap-2 rounded-2xl" onClick={() => navigate("/admin/analytics")}>
               <FileBarChart className="h-5 w-5 text-primary" />
-              <span className="text-sm font-medium">Branch Report</span>
+              <span className="text-sm font-medium">Analytics</span>
             </Button>
-            <Button
-              variant="outline"
-              className="h-auto py-4 flex flex-col items-center gap-2 rounded-2xl"
-              onClick={() => navigate("/admin/customers")}
-            >
+            <Button variant="outline" className="h-auto py-4 flex flex-col items-center gap-2 rounded-2xl" onClick={() => navigate("/admin/leaderboard")}>
               <ClipboardList className="h-5 w-5 text-primary" />
-              <span className="text-sm font-medium">Customer Report</span>
+              <span className="text-sm font-medium">Leaderboard</span>
+            </Button>
+            <Button variant="outline" className="h-auto py-4 flex flex-col items-center gap-2 rounded-2xl" onClick={() => navigate("/admin/announcements")}>
+              <ClipboardList className="h-5 w-5 text-primary" />
+              <span className="text-sm font-medium">Announcements</span>
+            </Button>
+            <Button variant="outline" className="h-auto py-4 flex flex-col items-center gap-2 rounded-2xl" onClick={() => navigate("/admin/referrals")}>
+              <ClipboardList className="h-5 w-5 text-primary" />
+              <span className="text-sm font-medium">Referrals</span>
             </Button>
           </div>
         </div>

@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          message: string
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          message: string
+          title: string
+          type?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          message?: string
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       branch_coin_transactions: {
         Row: {
           branch_id: string
@@ -59,16 +100,19 @@ export type Database = {
       branch_users: {
         Row: {
           branch_id: string
+          branch_role: string
           id: string
           user_id: string
         }
         Insert: {
           branch_id: string
+          branch_role?: string
           id?: string
           user_id: string
         }
         Update: {
           branch_id?: string
+          branch_role?: string
           id?: string
           user_id?: string
         }
@@ -178,6 +222,42 @@ export type Database = {
           },
         ]
       }
+      favorite_branches: {
+        Row: {
+          branch_id: string
+          created_at: string
+          customer_id: string
+          id: string
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string
+          customer_id: string
+          id?: string
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorite_branches_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorite_branches_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offers: {
         Row: {
           branch_id: string
@@ -232,6 +312,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          date_of_birth: string | null
           full_name: string | null
           id: string
           phone: string | null
@@ -239,6 +320,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          date_of_birth?: string | null
           full_name?: string | null
           id: string
           phone?: string | null
@@ -246,12 +328,78 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          date_of_birth?: string | null
           full_name?: string | null
           id?: string
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"]
         }
         Relationships: []
+      }
+      purchase_returns: {
+        Row: {
+          branch_id: string
+          coins_deducted: number
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          id: string
+          purchase_id: string
+          reason: string | null
+          return_amount: number
+        }
+        Insert: {
+          branch_id: string
+          coins_deducted?: number
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          id?: string
+          purchase_id: string
+          reason?: string | null
+          return_amount: number
+        }
+        Update: {
+          branch_id?: string
+          coins_deducted?: number
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          id?: string
+          purchase_id?: string
+          reason?: string | null
+          return_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_returns_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_returns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_returns_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_returns_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "purchases"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       purchases: {
         Row: {
@@ -444,6 +592,38 @@ export type Database = {
           value?: Json
         }
         Relationships: []
+      }
+      spin_results: {
+        Row: {
+          coins_won: number
+          created_at: string
+          customer_id: string
+          id: string
+          spin_date: string
+        }
+        Insert: {
+          coins_won?: number
+          created_at?: string
+          customer_id: string
+          id?: string
+          spin_date?: string
+        }
+        Update: {
+          coins_won?: number
+          created_at?: string
+          customer_id?: string
+          id?: string
+          spin_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spin_results_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

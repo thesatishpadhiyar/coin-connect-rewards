@@ -6,13 +6,14 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, Cake } from "lucide-react";
 
 export default function CustomerProfile() {
   const { profile, signOut, user } = useAuth();
   const { toast } = useToast();
   const [fullName, setFullName] = useState(profile?.full_name || "");
   const [phone, setPhone] = useState(profile?.phone || "");
+  const [dob, setDob] = useState(profile?.date_of_birth || "");
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -21,7 +22,7 @@ export default function CustomerProfile() {
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ full_name: fullName, phone })
+        .update({ full_name: fullName, phone, date_of_birth: dob || null })
         .eq("id", user.id);
       if (error) throw error;
       toast({ title: "Profile updated!" });
@@ -58,6 +59,11 @@ export default function CustomerProfile() {
               <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
             <div className="space-y-2">
+              <Label className="flex items-center gap-1"><Cake className="h-3 w-3" /> Date of Birth</Label>
+              <Input type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
+              <p className="text-[10px] text-muted-foreground">Get bonus coins on your birthday! 🎂</p>
+            </div>
+            <div className="space-y-2">
               <Label>Email</Label>
               <Input value={user?.email || ""} disabled className="bg-muted" />
             </div>
@@ -68,8 +74,7 @@ export default function CustomerProfile() {
         </div>
 
         <Button variant="outline" onClick={signOut} className="w-full gap-2 text-destructive border-destructive/30">
-          <LogOut className="h-4 w-4" />
-          Sign Out
+          <LogOut className="h-4 w-4" /> Sign Out
         </Button>
       </div>
     </CustomerLayout>

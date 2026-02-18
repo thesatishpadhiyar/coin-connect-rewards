@@ -9,30 +9,44 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
   const [referralCode, setReferralCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"login" | "signup">("login");
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Use phone as email: phone@welcomereward.app
+  const phoneToEmail = (ph: string) => {
+    const cleaned = ph.replace(/[^0-9]/g, "");
+    return `${cleaned}@welcomereward.app`;
+  };
+
+  const validatePhone = (ph: string) => {
+    const cleaned = ph.replace(/[^0-9]/g, "");
+    return cleaned.length >= 10;
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validatePhone(phone)) {
+      toast({ title: "Invalid phone", description: "Enter a valid 10+ digit phone number", variant: "destructive" });
+      return;
+    }
     setLoading(true);
     try {
+      const email = phoneToEmail(phone);
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      
-      // Get role and redirect
+
       const { data: profile } = await supabase
         .from("profiles")
         .select("role")
         .eq("id", data.user.id)
         .single();
-      
+
       if (profile?.role === "superadmin") navigate("/admin");
       else if (profile?.role === "branch") navigate("/branch");
       else navigate("/app");
@@ -45,31 +59,37 @@ export default function LoginPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!phone || phone.length < 10) {
-      toast({ title: "Invalid phone", description: "Please enter a valid phone number", variant: "destructive" });
+    if (!validatePhone(phone)) {
+      toast({ title: "Invalid phone", description: "Enter a valid 10+ digit phone number", variant: "destructive" });
+      return;
+    }
+    if (password.length < 6) {
+      toast({ title: "Weak password", description: "Password must be at least 6 characters", variant: "destructive" });
       return;
     }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      const email = phoneToEmail(phone);
+      const cleanedPhone = phone.replace(/[^0-9]/g, "");
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: window.location.origin,
           data: {
             role: "customer",
             full_name: fullName,
-            phone: phone,
+            phone: cleanedPhone,
             referral_code: referralCode || undefined,
           },
         },
       });
       if (error) throw error;
-      toast({
-        title: "Account created!",
-        description: "Please check your email to verify your account.",
-      });
-      setMode("login");
+
+      // Auto-confirmed, redirect directly
+      if (data.user) {
+        toast({ title: "Welcome! 🎉", description: "Your account has been created." });
+        navigate("/app");
+      }
     } catch (err: any) {
       toast({ title: "Signup failed", description: err.message, variant: "destructive" });
     } finally {
@@ -94,14 +114,15 @@ export default function LoginPage() {
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
+                  <Label htmlFor="login-phone">Mobile Number</Label>
                   <Input
-                    id="login-email"
-                    type="email"
-                    placeholder="you@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="login-phone"
+                    type="tel"
+                    placeholder="9876543210"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
                     required
+                    maxLength={15}
                   />
                 </div>
                 <div className="space-y-2">
@@ -134,24 +155,15 @@ export default function LoginPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-phone">Phone Number</Label>
+                  <Label htmlFor="signup-phone">Mobile Number</Label>
                   <Input
                     id="signup-phone"
-                    placeholder="+91 9876543210"
+                    type="tel"
+                    placeholder="9876543210"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    placeholder="you@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
+                    maxLength={15}
                   />
                 </div>
                 <div className="space-y-2">
@@ -184,7 +196,7 @@ export default function LoginPage() {
         </div>
 
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          Admin & Branch staff login with provided credentials
+          Admin & Branch staff login with provided mobile number
         </p>
       </div>
     </div>

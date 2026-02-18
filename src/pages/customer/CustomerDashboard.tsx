@@ -1,4 +1,4 @@
-import { Coins, ArrowUpRight, ArrowDownRight, Gift, TrendingUp } from "lucide-react";
+import { Coins, ArrowUpRight, ArrowDownRight, Gift, TrendingUp, QrCode } from "lucide-react";
 import { useWalletBalance, useWalletTransactions } from "@/hooks/useWallet";
 import { useCustomerData, useCustomerPurchases } from "@/hooks/useCustomer";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,6 +6,9 @@ import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import CustomerLayout from "@/layouts/CustomerLayout";
+import CustomerQRCode from "@/components/CustomerQRCode";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 export default function CustomerDashboard() {
   const { profile } = useAuth();
@@ -48,6 +51,19 @@ export default function CustomerDashboard() {
             </p>
           </div>
         </div>
+
+        {/* My QR Code button */}
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="w-full gap-2 rounded-2xl border-primary/30 text-primary">
+              <QrCode className="h-5 w-5" />
+              My QR Code — Show at Store
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-xs">
+            <CustomerQRCode />
+          </DialogContent>
+        </Dialog>
 
         {/* Quick stats */}
         <div className="grid grid-cols-2 gap-3">

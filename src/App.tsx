@@ -17,6 +17,7 @@ import CustomerReferral from "./pages/customer/CustomerReferral";
 import CustomerPurchases from "./pages/customer/CustomerPurchases";
 import CustomerProfile from "./pages/customer/CustomerProfile";
 import CustomerOffers from "./pages/customer/CustomerOffers";
+import CustomerSpinWheel from "./pages/customer/CustomerSpinWheel";
 
 import BranchDashboard from "./pages/branch/BranchDashboard";
 import BranchNewPurchase from "./pages/branch/BranchNewPurchase";
@@ -24,6 +25,9 @@ import BranchCustomers from "./pages/branch/BranchCustomers";
 import BranchPurchases from "./pages/branch/BranchPurchases";
 import BranchWallet from "./pages/branch/BranchWallet";
 import BranchOffers from "./pages/branch/BranchOffers";
+import BranchReturns from "./pages/branch/BranchReturns";
+import BranchStaff from "./pages/branch/BranchStaff";
+import BranchPerformance from "./pages/branch/BranchPerformance";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminBranches from "./pages/admin/AdminBranches";
@@ -32,6 +36,9 @@ import AdminPurchases from "./pages/admin/AdminPurchases";
 import AdminReferrals from "./pages/admin/AdminReferrals";
 import AdminWalletTransactions from "./pages/admin/AdminWalletTransactions";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import AdminLeaderboard from "./pages/admin/AdminLeaderboard";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +62,7 @@ const App = () => (
             <Route path="/app/purchases" element={<ProtectedRoute allowedRoles={["customer"]}><CustomerPurchases /></ProtectedRoute>} />
             <Route path="/app/profile" element={<ProtectedRoute allowedRoles={["customer"]}><CustomerProfile /></ProtectedRoute>} />
             <Route path="/app/offers" element={<ProtectedRoute allowedRoles={["customer"]}><CustomerOffers /></ProtectedRoute>} />
+            <Route path="/app/spin" element={<ProtectedRoute allowedRoles={["customer"]}><CustomerSpinWheel /></ProtectedRoute>} />
 
             {/* Branch */}
             <Route path="/branch" element={<ProtectedRoute allowedRoles={["branch"]}><BranchDashboard /></ProtectedRoute>} />
@@ -63,6 +71,9 @@ const App = () => (
             <Route path="/branch/purchases" element={<ProtectedRoute allowedRoles={["branch"]}><BranchPurchases /></ProtectedRoute>} />
             <Route path="/branch/wallet" element={<ProtectedRoute allowedRoles={["branch"]}><BranchWallet /></ProtectedRoute>} />
             <Route path="/branch/offers" element={<ProtectedRoute allowedRoles={["branch"]}><BranchOffers /></ProtectedRoute>} />
+            <Route path="/branch/returns" element={<ProtectedRoute allowedRoles={["branch"]}><BranchReturns /></ProtectedRoute>} />
+            <Route path="/branch/staff" element={<ProtectedRoute allowedRoles={["branch"]}><BranchStaff /></ProtectedRoute>} />
+            <Route path="/branch/performance" element={<ProtectedRoute allowedRoles={["branch"]}><BranchPerformance /></ProtectedRoute>} />
 
             {/* Admin */}
             <Route path="/admin" element={<ProtectedRoute allowedRoles={["superadmin"]}><AdminDashboard /></ProtectedRoute>} />
@@ -72,6 +83,9 @@ const App = () => (
             <Route path="/admin/referrals" element={<ProtectedRoute allowedRoles={["superadmin"]}><AdminReferrals /></ProtectedRoute>} />
             <Route path="/admin/wallet-transactions" element={<ProtectedRoute allowedRoles={["superadmin"]}><AdminWalletTransactions /></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={["superadmin"]}><AdminSettings /></ProtectedRoute>} />
+            <Route path="/admin/announcements" element={<ProtectedRoute allowedRoles={["superadmin"]}><AdminAnnouncements /></ProtectedRoute>} />
+            <Route path="/admin/analytics" element={<ProtectedRoute allowedRoles={["superadmin"]}><AdminAnalytics /></ProtectedRoute>} />
+            <Route path="/admin/leaderboard" element={<ProtectedRoute allowedRoles={["superadmin"]}><AdminLeaderboard /></ProtectedRoute>} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

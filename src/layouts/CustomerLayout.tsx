@@ -1,13 +1,13 @@
 import { ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, Wallet, Gift, ShoppingBag, User } from "lucide-react";
+import { Home, Wallet, Gift, Tag, User } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 const navItems = [
   { to: "/app", icon: Home, label: "Home" },
   { to: "/app/wallet", icon: Wallet, label: "Wallet" },
   { to: "/app/referral", icon: Gift, label: "Refer" },
-  { to: "/app/purchases", icon: ShoppingBag, label: "Purchases" },
+  { to: "/app/offers", icon: Tag, label: "Offers" },
   { to: "/app/profile", icon: User, label: "Profile" },
 ];
 

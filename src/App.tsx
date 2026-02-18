@@ -16,12 +16,14 @@ import CustomerWallet from "./pages/customer/CustomerWallet";
 import CustomerReferral from "./pages/customer/CustomerReferral";
 import CustomerPurchases from "./pages/customer/CustomerPurchases";
 import CustomerProfile from "./pages/customer/CustomerProfile";
+import CustomerOffers from "./pages/customer/CustomerOffers";
 
 import BranchDashboard from "./pages/branch/BranchDashboard";
 import BranchNewPurchase from "./pages/branch/BranchNewPurchase";
 import BranchCustomers from "./pages/branch/BranchCustomers";
 import BranchPurchases from "./pages/branch/BranchPurchases";
 import BranchWallet from "./pages/branch/BranchWallet";
+import BranchOffers from "./pages/branch/BranchOffers";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminBranches from "./pages/admin/AdminBranches";
@@ -52,6 +54,7 @@ const App = () => (
             <Route path="/app/referral" element={<ProtectedRoute allowedRoles={["customer"]}><CustomerReferral /></ProtectedRoute>} />
             <Route path="/app/purchases" element={<ProtectedRoute allowedRoles={["customer"]}><CustomerPurchases /></ProtectedRoute>} />
             <Route path="/app/profile" element={<ProtectedRoute allowedRoles={["customer"]}><CustomerProfile /></ProtectedRoute>} />
+            <Route path="/app/offers" element={<ProtectedRoute allowedRoles={["customer"]}><CustomerOffers /></ProtectedRoute>} />
 
             {/* Branch */}
             <Route path="/branch" element={<ProtectedRoute allowedRoles={["branch"]}><BranchDashboard /></ProtectedRoute>} />
@@ -59,6 +62,7 @@ const App = () => (
             <Route path="/branch/customers" element={<ProtectedRoute allowedRoles={["branch"]}><BranchCustomers /></ProtectedRoute>} />
             <Route path="/branch/purchases" element={<ProtectedRoute allowedRoles={["branch"]}><BranchPurchases /></ProtectedRoute>} />
             <Route path="/branch/wallet" element={<ProtectedRoute allowedRoles={["branch"]}><BranchWallet /></ProtectedRoute>} />
+            <Route path="/branch/offers" element={<ProtectedRoute allowedRoles={["branch"]}><BranchOffers /></ProtectedRoute>} />
 
             {/* Admin */}
             <Route path="/admin" element={<ProtectedRoute allowedRoles={["superadmin"]}><AdminDashboard /></ProtectedRoute>} />

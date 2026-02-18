@@ -1,6 +1,6 @@
 import { ReactNode, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, ShoppingBag, FileText, Wallet, Menu, X, LogOut, PlusCircle } from "lucide-react";
+import { LayoutDashboard, Users, ShoppingBag, FileText, Wallet, Menu, X, LogOut, PlusCircle, Tag } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -11,13 +11,14 @@ const navItems = [
   { to: "/branch/purchase/new", icon: ShoppingBag, label: "New Purchase" },
   { to: "/branch/purchases", icon: FileText, label: "Purchases" },
   { to: "/branch/wallet", icon: Wallet, label: "Wallet" },
+  { to: "/branch/offers", icon: Tag, label: "Offers" },
 ];
 
 const bottomNavItems = [
   { to: "/branch", icon: LayoutDashboard, label: "Home", end: true },
   { to: "/branch/customers", icon: Users, label: "Customers" },
   { to: "/branch/purchase/new", icon: PlusCircle, label: "Add Sale" },
-  { to: "/branch/purchases", icon: FileText, label: "Sales" },
+  { to: "/branch/offers", icon: Tag, label: "Offers" },
   { to: "/branch/wallet", icon: Wallet, label: "Wallet" },
 ];
 

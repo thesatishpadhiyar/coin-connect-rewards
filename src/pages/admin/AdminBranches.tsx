@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
-import { Building2, Plus, UserPlus, Trash2, Search, Coins, MapPin, ToggleLeft, ToggleRight } from "lucide-react";
+import { Building2, Plus, UserPlus, Trash2, Search, Coins, MapPin, ToggleLeft, ToggleRight, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +22,8 @@ export default function AdminBranches() {
   const [assignOpen, setAssignOpen] = useState<string | null>(null);
   const [coinOpen, setCoinOpen] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", address: "", city: "", phone: "", manager_name: "", map_link: "" });
+  const [editOpen, setEditOpen] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", address: "", city: "", phone: "", manager_name: "", map_link: "" });
   const [searchPhone, setSearchPhone] = useState("");
   const [foundUser, setFoundUser] = useState<any>(null);
   const [searching, setSearching] = useState(false);
@@ -96,6 +98,30 @@ export default function AdminBranches() {
     onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }),
   });
 
+  const updateBranch = useMutation({
+    mutationFn: async (branchId: string) => {
+      const { error } = await supabase.from("branches").update({
+        name: editForm.name, address: editForm.address, city: editForm.city,
+        phone: editForm.phone, manager_name: editForm.manager_name, map_link: editForm.map_link,
+      }).eq("id", branchId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-branches"] });
+      toast({ title: "Branch updated!" });
+      setEditOpen(null);
+    },
+    onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+  });
+
+  const openEditBranch = (b: any) => {
+    setEditForm({
+      name: b.name || "", address: b.address || "", city: b.city || "",
+      phone: b.phone || "", manager_name: b.manager_name || "", map_link: b.map_link || "",
+    });
+    setEditOpen(b.id);
+  };
+
   const searchUser = async () => {
     if (!searchPhone.trim()) return;
     setSearching(true);
@@ -163,6 +189,9 @@ export default function AdminBranches() {
         <div className="flex items-start justify-between mb-2">
           <h3 className="font-semibold text-foreground">{b.name}</h3>
           <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => openEditBranch(b)}>
+              <Pencil className="h-4 w-4" />
+            </Button>
             <Button
               variant="ghost"
               size="icon"
@@ -316,6 +345,27 @@ export default function AdminBranches() {
             </TabsContent>
           </Tabs>
         )}
+        {/* Edit Branch Dialog */}
+        <Dialog open={!!editOpen} onOpenChange={(v) => { if (!v) setEditOpen(null); }}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Edit Branch</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              {formFields.map(({ key, label, required }) => (
+                <div key={key} className="space-y-1">
+                  <Label>{label}{required && " *"}</Label>
+                  <Input
+                    value={(editForm as any)[key]}
+                    onChange={(e) => setEditForm({ ...editForm, [key]: e.target.value })}
+                    required={required}
+                  />
+                </div>
+              ))}
+              <Button onClick={() => updateBranch.mutate(editOpen!)} disabled={updateBranch.isPending || !editForm.name} className="w-full">
+                {updateBranch.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );

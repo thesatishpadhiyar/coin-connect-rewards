@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Coins, CheckCircle, Search, UserPlus } from "lucide-react";
+import { Coins, CheckCircle, Search, UserPlus, Camera } from "lucide-react";
+import QRScanner from "@/components/QRScanner";
 
 type Step = "search" | "form" | "receipt";
 
@@ -35,6 +36,7 @@ export default function BranchNewPurchase() {
 
   // New customer
   const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPhone, setNewPhone] = useState("");
@@ -48,6 +50,28 @@ export default function BranchNewPurchase() {
       return data;
     },
   });
+
+  const loadCustomerById = async (customerId: string) => {
+    const { data: cust } = await supabase.from("customers").select("*").eq("id", customerId).single();
+    if (!cust) {
+      toast({ title: "Customer not found", variant: "destructive" });
+      return;
+    }
+    if (cust.is_blocked) {
+      toast({ title: "Customer blocked", description: "This customer is blocked", variant: "destructive" });
+      return;
+    }
+    const { data: prof } = await supabase.from("profiles").select("id, full_name, phone").eq("id", cust.user_id!).single();
+    setSelectedCustomer({ ...cust, profile: prof });
+    const { data: txns } = await supabase.from("wallet_transactions").select("coins").eq("customer_id", cust.id);
+    setWalletBalance(txns?.reduce((s: number, t: any) => s + t.coins, 0) ?? 0);
+    setShowScanner(false);
+    setStep("form");
+  };
+
+  const handleQRScan = (customerId: string) => {
+    loadCustomerById(customerId);
+  };
 
   const searchCustomer = async () => {
     if (!phoneSearch.trim()) return;
@@ -269,22 +293,48 @@ export default function BranchNewPurchase() {
         {step === "search" && (
           <div className="space-y-5">
             <h2 className="font-display text-xl font-bold text-foreground">New Purchase</h2>
-            <div className="rounded-2xl border border-border bg-card p-5 shadow-card space-y-4">
-              <div className="space-y-2">
-                <Label>Search Customer by Phone</Label>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Enter phone number"
-                    value={phoneSearch}
-                    onChange={(e) => setPhoneSearch(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && searchCustomer()}
-                  />
-                  <Button onClick={searchCustomer} className="shrink-0 gap-1">
-                    <Search className="h-4 w-4" /> Search
-                  </Button>
+
+            {showScanner ? (
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
+                <QRScanner onScan={handleQRScan} onClose={() => setShowScanner(false)} />
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-card space-y-4">
+                {/* Scan QR button */}
+                <Button
+                  onClick={() => setShowScanner(true)}
+                  variant="outline"
+                  className="w-full gap-2 rounded-xl border-primary/30 text-primary"
+                >
+                  <Camera className="h-4 w-4" />
+                  Scan Customer QR Code
+                </Button>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-border" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">or search by phone</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Phone Number</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter phone number"
+                      value={phoneSearch}
+                      onChange={(e) => setPhoneSearch(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && searchCustomer()}
+                    />
+                    <Button onClick={searchCustomer} className="shrink-0 gap-1">
+                      <Search className="h-4 w-4" /> Search
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {showNewCustomer && (
               <div className="rounded-2xl border border-border bg-card p-5 shadow-card space-y-4">

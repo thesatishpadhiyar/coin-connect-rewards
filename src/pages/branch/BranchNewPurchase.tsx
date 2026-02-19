@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Coins, CheckCircle, Search, UserPlus, Camera } from "lucide-react";
+import { Coins, CheckCircle, Search, UserPlus, Camera, Wallet } from "lucide-react";
 import QRScanner from "@/components/QRScanner";
 
 type Step = "search" | "form" | "receipt";
@@ -51,6 +51,26 @@ export default function BranchNewPurchase() {
     },
   });
 
+  // Branch wallet balance
+  const { data: branchWalletBalance = 0 } = useQuery({
+    queryKey: ["branch-wallet-balance", branchUser?.branch_id],
+    enabled: !!branchUser?.branch_id,
+    queryFn: async () => {
+      const { data } = await supabase.rpc("get_branch_coin_balance", { _branch_id: branchUser!.branch_id });
+      // Subtract coins already given to customers from this branch
+      const { data: givenTxns } = await supabase
+        .from("wallet_transactions")
+        .select("coins")
+        .eq("branch_id", branchUser!.branch_id);
+      const totalGiven = givenTxns?.filter((t: any) => t.coins > 0).reduce((s: number, t: any) => s + t.coins, 0) ?? 0;
+      const totalRedeemed = Math.abs(givenTxns?.filter((t: any) => t.coins < 0).reduce((s: number, t: any) => s + t.coins, 0) ?? 0);
+      return (data ?? 0) - totalGiven + totalRedeemed;
+    },
+  });
+
+  // Check if customer has already redeemed before
+  const [customerHasRedeemed, setCustomerHasRedeemed] = useState(false);
+
   const loadCustomerByPhone = async (phone: string) => {
     const { data: profiles } = await supabase.from("profiles").select("id, full_name, phone").eq("phone", phone.trim());
     if (!profiles || profiles.length === 0) {
@@ -73,6 +93,14 @@ export default function BranchNewPurchase() {
     setSelectedCustomer({ ...cust, profile: prof });
     const { data: txns } = await supabase.from("wallet_transactions").select("coins").eq("customer_id", cust.id);
     setWalletBalance(txns?.reduce((s: number, t: any) => s + t.coins, 0) ?? 0);
+    // Check if customer has already redeemed
+    const { data: redeemTxns } = await supabase
+      .from("wallet_transactions")
+      .select("id")
+      .eq("customer_id", cust.id)
+      .eq("type", "REDEEM")
+      .limit(1);
+    setCustomerHasRedeemed((redeemTxns?.length ?? 0) > 0);
     setShowScanner(false);
     setStep("form");
   };
@@ -96,6 +124,14 @@ export default function BranchNewPurchase() {
         // Get wallet balance
         const { data: txns } = await supabase.from("wallet_transactions").select("coins").eq("customer_id", cust.id);
         setWalletBalance(txns?.reduce((s: number, t: any) => s + t.coins, 0) ?? 0);
+        // Check if customer has already redeemed
+        const { data: redeemTxns } = await supabase
+          .from("wallet_transactions")
+          .select("id")
+          .eq("customer_id", cust.id)
+          .eq("type", "REDEEM")
+          .limit(1);
+        setCustomerHasRedeemed((redeemTxns?.length ?? 0) > 0);
         setStep("form");
       } else {
         setShowNewCustomer(true);
@@ -118,17 +154,29 @@ export default function BranchNewPurchase() {
   const minCoinsToRedeem = settings?.min_coins_to_redeem ?? 50;
   const coinValueInr = settings?.coin_value_inr ?? 1;
 
+  // Cap earned coins at 500 per transaction
   let earnedCoins = bill >= minBillToEarn ? Math.floor(bill * coinPercent / 100) : 0;
   if (maxCoinsPerBill && maxCoinsPerBill !== null) earnedCoins = Math.min(earnedCoins, maxCoinsPerBill);
+  earnedCoins = Math.min(earnedCoins, 500); // Max 500 coins per transaction
 
+  // Check if branch has enough wallet balance to give these coins
+  const branchCanAfford = branchWalletBalance >= earnedCoins;
+  const effectiveEarnedCoins = branchCanAfford ? earnedCoins : 0;
+
+  // Customer can redeem max 50% of their balance, only ONE TIME ever
+  const maxRedeemByBalance = Math.floor(walletBalance * 0.5); // 50% of customer balance
   const maxRedeemInr = bill * maxRedeemPercent / 100;
-  const maxRedeemCoins = Math.floor(maxRedeemInr / coinValueInr);
+  const maxRedeemCoins = Math.min(Math.floor(maxRedeemInr / coinValueInr), maxRedeemByBalance);
   const clampedRedeem = Math.min(redeemAmount, maxRedeemCoins, walletBalance);
-  const canRedeem = bill >= minBillToRedeem && walletBalance >= minCoinsToRedeem;
+  const canRedeem = bill >= minBillToRedeem && walletBalance >= minCoinsToRedeem && !customerHasRedeemed;
   const finalPayable = bill - (redeemCoins && canRedeem ? clampedRedeem * coinValueInr : 0);
 
   const handleSubmit = async () => {
     if (!branchUser?.branch_id || !selectedCustomer) return;
+    if (!branchCanAfford && effectiveEarnedCoins === 0 && earnedCoins > 0) {
+      toast({ title: "Insufficient branch wallet", description: `Branch needs ${earnedCoins} coins but has ${branchWalletBalance}`, variant: "destructive" });
+      return;
+    }
     setSubmitting(true);
     try {
       // Check first purchase for welcome bonus
@@ -151,7 +199,7 @@ export default function BranchNewPurchase() {
           bill_amount: bill,
           category,
           payment_method: paymentMethod,
-          earned_coins: earnedCoins,
+          earned_coins: effectiveEarnedCoins,
           welcome_bonus_coins: bonusCoins,
           redeemed_coins: actualRedeem,
           final_payable: bill - actualRedeem * coinValueInr,
@@ -163,13 +211,13 @@ export default function BranchNewPurchase() {
 
       // Wallet transactions
       const walletTxns: any[] = [];
-      if (earnedCoins > 0) {
+      if (effectiveEarnedCoins > 0) {
         walletTxns.push({
           customer_id: selectedCustomer.id,
           branch_id: branchUser.branch_id,
           purchase_id: purchase.id,
           type: "EARN",
-          coins: earnedCoins,
+          coins: effectiveEarnedCoins,
           description: `Earned on purchase #${invoiceNo}`,
         });
       }
@@ -240,11 +288,11 @@ export default function BranchNewPurchase() {
 
       setReceipt({
         billAmount: bill,
-        earnedCoins,
+        earnedCoins: effectiveEarnedCoins,
         bonusCoins,
         redeemedCoins: actualRedeem,
         finalPayable: bill - actualRedeem * coinValueInr,
-        newBalance: walletBalance + earnedCoins + (isFirstPurchase ? bonusCoins : 0) - actualRedeem,
+        newBalance: walletBalance + effectiveEarnedCoins + (isFirstPurchase ? bonusCoins : 0) - actualRedeem,
       });
       setStep("receipt");
       toast({ title: "Purchase recorded!" });
@@ -265,6 +313,7 @@ export default function BranchNewPurchase() {
     setRedeemAmount(0);
     setReceipt(null);
     setShowNewCustomer(false);
+    setCustomerHasRedeemed(false);
   };
 
   const handleCreateCustomer = async () => {
@@ -391,6 +440,23 @@ export default function BranchNewPurchase() {
               </div>
             </div>
 
+            {/* Branch wallet info */}
+            <div className="rounded-xl border border-border bg-muted/50 p-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Wallet className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Branch Wallet Balance</span>
+              </div>
+              <span className={`text-sm font-bold ${branchWalletBalance > 0 ? 'text-success' : 'text-destructive'}`}>
+                {branchWalletBalance.toLocaleString()} coins
+              </span>
+            </div>
+
+            {customerHasRedeemed && (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-center">
+                <p className="text-xs text-amber-600 font-medium">⚠️ This customer has already used their one-time redemption</p>
+              </div>
+            )}
+
             <div className="rounded-2xl border border-border bg-card p-5 shadow-card space-y-4">
               <div className="space-y-2">
                 <Label>Invoice No.</Label>
@@ -449,7 +515,7 @@ export default function BranchNewPurchase() {
                         placeholder={`Max ${Math.min(maxRedeemCoins, walletBalance)}`}
                       />
                       <p className="text-xs text-muted-foreground">
-                        Max redeemable: {Math.min(maxRedeemCoins, walletBalance)} coins (₹{Math.min(maxRedeemCoins, walletBalance) * coinValueInr})
+                        Max redeemable: {Math.min(maxRedeemCoins, walletBalance)} coins (50% of balance, one-time only)
                       </p>
                     </div>
                   )}
@@ -466,9 +532,9 @@ export default function BranchNewPurchase() {
                     <span>Bill Amount</span>
                     <span>₹{bill.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-success">
-                    <span>Coins Earned</span>
-                    <span>+{earnedCoins}</span>
+                  <div className={`flex justify-between ${branchCanAfford ? 'text-success' : 'text-destructive'}`}>
+                    <span>Coins Earned {!branchCanAfford && '(insufficient branch balance)'}</span>
+                    <span>+{effectiveEarnedCoins}</span>
                   </div>
                   {redeemCoins && canRedeem && clampedRedeem > 0 && (
                     <div className="flex justify-between text-destructive">

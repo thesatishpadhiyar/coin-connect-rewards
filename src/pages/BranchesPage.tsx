@@ -44,18 +44,28 @@ export default function BranchesPage() {
         ) : (
           <div className="space-y-3">
             {branches?.map((b: any) => (
-              <div key={b.id} className="rounded-2xl border border-border bg-card p-4 shadow-card">
-                <h3 className="font-semibold text-foreground">{b.name}</h3>
-                {b.address && (
-                  <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <MapPin className="h-3 w-3" /> {b.address}{b.city ? `, ${b.city}` : ""}
-                  </p>
+              <div key={b.id} className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
+                {b.logo_url && (
+                  <div className="h-36 w-full overflow-hidden">
+                    <img src={b.logo_url} alt={b.name} className="h-full w-full object-cover" />
+                  </div>
                 )}
-                {b.phone && (
-                  <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Phone className="h-3 w-3" /> {b.phone}
-                  </p>
-                )}
+                <div className="p-4">
+                  <h3 className="font-semibold text-foreground">{b.name}</h3>
+                  {b.address && (
+                    <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <MapPin className="h-3 w-3" /> {b.address}{b.city ? `, ${b.city}` : ""}
+                    </p>
+                  )}
+                  {b.phone && (
+                    <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Phone className="h-3 w-3" /> {b.phone}
+                    </p>
+                  )}
+                  {b.opening_time && b.closing_time && (
+                    <p className="mt-1 text-xs text-muted-foreground">🕐 {b.opening_time?.slice(0,5)} - {b.closing_time?.slice(0,5)}</p>
+                  )}
+                </div>
               </div>
             ))}
           </div>

@@ -88,15 +88,26 @@ export default function CustomerOffers() {
               const isFav = favorites?.has(b.id);
               return (
                 <div key={b.id} className={`rounded-2xl border bg-card shadow-card overflow-hidden ${isFav ? "border-primary/30" : "border-border"}`}>
+                  {/* Branch image */}
+                  {b.logo_url && (
+                    <div className="h-32 w-full overflow-hidden">
+                      <img src={b.logo_url} alt={b.name} className="h-full w-full object-cover" />
+                    </div>
+                  )}
                   <div className="p-4 border-b border-border">
                     <div className="flex items-center gap-3">
-                      <div className="rounded-xl bg-accent p-2.5">
-                        <Building2 className="h-5 w-5 text-accent-foreground" />
-                      </div>
+                      {!b.logo_url && (
+                        <div className="rounded-xl bg-accent p-2.5">
+                          <Building2 className="h-5 w-5 text-accent-foreground" />
+                        </div>
+                      )}
                       <div className="flex-1">
                         <h3 className="font-semibold text-foreground">{b.name}</h3>
                         {b.address && <p className="text-xs text-muted-foreground">{b.address}{b.city ? `, ${b.city}` : ""}</p>}
                         {b.phone && <p className="text-xs text-muted-foreground">📞 {b.phone}</p>}
+                        {b.opening_time && b.closing_time && (
+                          <p className="text-xs text-muted-foreground">🕐 {b.opening_time?.slice(0,5)} - {b.closing_time?.slice(0,5)}</p>
+                        )}
                       </div>
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleFavorite.mutate(b.id)}>

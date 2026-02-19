@@ -1,14 +1,19 @@
 import BranchLayout from "@/layouts/BranchLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ShoppingBag, Users, Coins, TrendingUp } from "lucide-react";
+import { ShoppingBag, Users, Coins, TrendingUp, Camera, Upload } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 export default function BranchDashboard() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [uploading, setUploading] = useState(false);
 
   const { data: branchUser } = useQuery({
     queryKey: ["branch-user", user?.id],
@@ -16,7 +21,7 @@ export default function BranchDashboard() {
     queryFn: async () => {
       const { data } = await supabase
         .from("branch_users")
-        .select("branch_id, branches(name)")
+        .select("branch_id, branches(name, logo_url)")
         .eq("user_id", user!.id)
         .single();
       return data;
@@ -24,6 +29,27 @@ export default function BranchDashboard() {
   });
 
   const branchId = branchUser?.branch_id;
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !branchId) return;
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `${branchId}.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from("branch-logos").upload(path, file, { upsert: true });
+      if (uploadErr) throw uploadErr;
+      const { data: { publicUrl } } = supabase.storage.from("branch-logos").getPublicUrl(path);
+      const { error: updateErr } = await supabase.from("branches").update({ logo_url: publicUrl }).eq("id", branchId);
+      if (updateErr) throw updateErr;
+      queryClient.invalidateQueries({ queryKey: ["branch-user"] });
+      toast({ title: "Branch image updated!" });
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ["branch-stats", branchId],
@@ -50,13 +76,31 @@ export default function BranchDashboard() {
   return (
     <BranchLayout>
       <div className="mx-auto max-w-2xl animate-fade-in space-y-6">
-        <div>
-          <h2 className="font-display text-xl font-bold text-foreground">
-            Branch Dashboard
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {(branchUser as any)?.branches?.name || "Loading..."}
-          </p>
+        {/* Branch image + header */}
+        <div className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
+          <div className="relative h-36 bg-muted">
+            {(branchUser as any)?.branches?.logo_url ? (
+              <img src={(branchUser as any).branches.logo_url} alt="Branch" className="h-full w-full object-cover" />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center">
+                <Camera className="h-8 w-8 text-muted-foreground" />
+              </div>
+            )}
+            <label className="absolute bottom-2 right-2 cursor-pointer">
+              <div className="flex items-center gap-1 rounded-full bg-background/80 backdrop-blur-sm px-3 py-1.5 text-xs font-medium text-foreground shadow-sm border border-border hover:bg-background transition-colors">
+                <Upload className="h-3 w-3" /> {uploading ? "Uploading..." : "Change Photo"}
+              </div>
+              <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={uploading} />
+            </label>
+          </div>
+          <div className="p-4">
+            <h2 className="font-display text-xl font-bold text-foreground">
+              Branch Dashboard
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {(branchUser as any)?.branches?.name || "Loading..."}
+            </p>
+          </div>
         </div>
 
         <Link to="/branch/purchase/new">

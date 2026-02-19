@@ -204,63 +204,89 @@ export default function AdminCustomers() {
           <div className="space-y-3">
             {customers.map((c: any) => {
               const balance = walletBalances?.[c.id] ?? 0;
+              const joinedDate = c.profiles?.created_at ? format(new Date(c.profiles.created_at), "dd MMM yyyy") : "—";
               return (
-                <div key={c.id} className="rounded-2xl border border-border bg-card p-4 shadow-card">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="font-semibold text-sm text-foreground">{c.profiles?.full_name || "Unknown"}</p>
-                      <p className="text-xs text-muted-foreground">📞 {c.profiles?.phone} · Code: {c.referral_code}</p>
-                      <p className="text-xs text-muted-foreground mt-1">Balance: <span className="font-semibold text-foreground">{balance} coins</span></p>
+                <div key={c.id} className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
+                  {/* Header row */}
+                  <div className="flex items-center gap-3 p-4 pb-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 shrink-0">
+                      <span className="text-lg font-bold text-primary">{(c.profiles?.full_name || "?")[0].toUpperCase()}</span>
                     </div>
-                    <div className="flex items-center gap-1 flex-wrap justify-end">
-                      {c.is_blocked && <Badge variant="destructive" className="mr-1">Blocked</Badge>}
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" title="View Purchases" onClick={() => setHistoryCustomer(c)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" title="Give Referral Bonus" onClick={() => setBonusCustomer(c)}>
-                        <Gift className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-warning" title="Reset Wallet" disabled={balance <= 0}>
-                            <RotateCcw className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Reset wallet for {c.profiles?.full_name}?</AlertDialogTitle>
-                            <AlertDialogDescription>This will deduct {balance} coins and set their wallet to 0. This cannot be undone.</AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => resetWallet.mutate(c)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Reset Wallet</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" title={c.is_blocked ? "Unblock" : "Block"} onClick={() => toggleBlock.mutate({ id: c.id, is_blocked: !c.is_blocked })}>
-                        {c.is_blocked ? <CheckCircle className="h-4 w-4 text-success" /> : <Ban className="h-4 w-4 text-destructive" />}
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(c)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete customer?</AlertDialogTitle>
-                            <AlertDialogDescription>This will permanently delete this customer record.</AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => deleteCustomer.mutate(c.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-foreground truncate">{c.profiles?.full_name || "Unknown"}</p>
+                        {c.is_blocked && <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Blocked</Badge>}
+                      </div>
+                      <p className="text-xs text-muted-foreground">📞 {c.profiles?.phone || "No phone"}</p>
                     </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-lg font-bold text-primary">{balance}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Coins</p>
+                    </div>
+                  </div>
+
+                  {/* Info chips */}
+                  <div className="flex flex-wrap gap-2 px-4 pb-3">
+                    <div className="flex items-center gap-1.5 rounded-lg bg-accent/50 px-2.5 py-1">
+                      <Coins className="h-3 w-3 text-primary" />
+                      <span className="text-[11px] font-bold text-foreground">{c.referral_code}</span>
+                      <span className="text-[10px] text-muted-foreground">Referral</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 rounded-lg bg-muted px-2.5 py-1">
+                      <Users className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-[11px] text-muted-foreground">Joined</span>
+                      <span className="text-[11px] font-semibold text-foreground">{joinedDate}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center justify-end gap-0.5 border-t border-border px-3 py-2 bg-muted/30">
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" title="View Purchases" onClick={() => setHistoryCustomer(c)}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" title="Give Referral Bonus" onClick={() => setBonusCustomer(c)}>
+                      <Gift className="h-4 w-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-warning" title="Reset Wallet" disabled={balance <= 0}>
+                          <RotateCcw className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Reset wallet for {c.profiles?.full_name}?</AlertDialogTitle>
+                          <AlertDialogDescription>This will deduct {balance} coins and set their wallet to 0. This cannot be undone.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => resetWallet.mutate(c)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Reset Wallet</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" title={c.is_blocked ? "Unblock" : "Block"} onClick={() => toggleBlock.mutate({ id: c.id, is_blocked: !c.is_blocked })}>
+                      {c.is_blocked ? <CheckCircle className="h-4 w-4 text-success" /> : <Ban className="h-4 w-4 text-destructive" />}
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(c)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete customer?</AlertDialogTitle>
+                          <AlertDialogDescription>This will permanently delete this customer record.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteCustomer.mutate(c.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               );

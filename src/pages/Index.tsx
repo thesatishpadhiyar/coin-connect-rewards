@@ -1,97 +1,85 @@
 import { Link } from "react-router-dom";
-import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
-import { Coins, Gift, ShoppingBag, Shield } from "lucide-react";
+import { Coins, Gift, ShoppingBag, Shield, ChevronRight } from "lucide-react";
 
 const features = [
-  {
-    icon: Coins,
-    title: "Earn Coins",
-    desc: "Get coins on every purchase based on bill amount",
-  },
-  {
-    icon: Gift,
-    title: "Refer & Earn",
-    desc: "Share your code, earn bonus coins when friends shop",
-  },
-  {
-    icon: ShoppingBag,
-    title: "Redeem Instantly",
-    desc: "Use coins to save on your next purchase at any branch",
-  },
-  {
-    icon: Shield,
-    title: "Secure & Trusted",
-    desc: "Your coins are safe with transparent tracking",
-  },
+  { icon: Coins, title: "Earn Coins", desc: "Get coins on every purchase based on bill amount" },
+  { icon: Gift, title: "Refer & Earn", desc: "Share your code, earn bonus coins when friends shop" },
+  { icon: ShoppingBag, title: "Redeem Instantly", desc: "Use coins to save on your next purchase" },
+  { icon: Shield, title: "Secure & Trusted", desc: "Your coins are safe with transparent tracking" },
 ];
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero */}
-      <div className="gradient-gold relative overflow-hidden">
-        <div className="absolute inset-0 coin-shimmer" />
-        <div className="relative mx-auto max-w-lg px-6 pb-12 pt-16 text-center">
-          <div className="mb-6 flex justify-center">
-            <div className="rounded-2xl bg-card/20 p-3 backdrop-blur-sm">
-              <Coins className="h-10 w-10 text-primary-foreground" />
-            </div>
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Status bar spacer */}
+      <div className="safe-area-top bg-foreground" />
+
+      {/* Hero — full-screen app style */}
+      <div className="gradient-dark relative flex-shrink-0 overflow-hidden">
+        <div className="absolute inset-0 coin-shimmer opacity-30" />
+        <div className="relative mx-auto max-w-lg px-6 pb-10 pt-14 text-center">
+          {/* App icon */}
+          <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-[22px] gradient-gold shadow-gold">
+            <Coins className="h-10 w-10 text-primary-foreground" />
           </div>
-          <h1 className="font-display text-3xl font-bold text-primary-foreground md:text-4xl">
+          <h1 className="font-display text-2xl font-bold text-primary-foreground">
             Welcome Reward
           </h1>
-          <p className="mt-2 text-sm font-medium text-primary-foreground/80">
+          <p className="mt-1 text-xs font-medium text-primary-foreground/60 uppercase tracking-widest">
             Mobile Shop Loyalty Coins
           </p>
-          <p className="mt-4 text-base text-primary-foreground/90">
+          <p className="mt-4 text-sm text-primary-foreground/80 leading-relaxed max-w-[280px] mx-auto">
             Shop at your favourite mobile store, earn coins, refer friends & save on every visit!
           </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <Link to="/login">
-              <Button size="lg" variant="secondary" className="w-full sm:w-auto font-semibold shadow-elevated">
-                Get Started
+        </div>
+      </div>
+
+      {/* Content — rounded overlap */}
+      <div className="relative -mt-4 flex-1 rounded-t-3xl bg-background z-10">
+        <div className="mx-auto max-w-lg px-5 pt-6 pb-8">
+          {/* CTA Buttons */}
+          <div className="space-y-3 mb-8">
+            <Link to="/login" className="block">
+              <Button size="lg" className="w-full rounded-2xl h-14 text-base font-semibold shadow-gold gap-2">
+                Get Started <ChevronRight className="h-5 w-5" />
               </Button>
             </Link>
-            <Link to="/branches">
-              <Button size="lg" variant="outline" className="w-full sm:w-auto border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
-                View Branches
+            <Link to="/branches" className="block">
+              <Button size="lg" variant="outline" className="w-full rounded-2xl h-12 text-sm font-medium">
+                View Our Branches
               </Button>
             </Link>
           </div>
-        </div>
-      </div>
 
-      {/* Features */}
-      <div className="mx-auto max-w-lg px-6 py-12">
-        <h2 className="mb-8 text-center font-display text-xl font-bold text-foreground">
-          How It Works
-        </h2>
-        <div className="grid grid-cols-2 gap-4">
-          {features.map((f) => (
-            <div
-              key={f.title}
-              className="rounded-2xl border border-border bg-card p-4 shadow-card transition-shadow hover:shadow-elevated"
-            >
-              <div className="mb-3 inline-flex rounded-xl bg-accent p-2.5">
-                <f.icon className="h-5 w-5 text-accent-foreground" />
+          {/* Features */}
+          <h2 className="mb-4 font-display text-base font-bold text-foreground">
+            How It Works
+          </h2>
+          <div className="space-y-3">
+            {features.map((f, i) => (
+              <div
+                key={f.title}
+                className="flex items-start gap-4 rounded-2xl border border-border bg-card p-4 shadow-card animate-slide-up"
+                style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'both' }}
+              >
+                <div className="flex-shrink-0 rounded-xl gradient-gold-soft p-3">
+                  <f.icon className="h-5 w-5 text-accent-foreground" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">{f.title}</h3>
+                  <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+                </div>
               </div>
-              <h3 className="font-display text-sm font-semibold text-foreground">{f.title}</h3>
-              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+            ))}
+          </div>
 
-      {/* Footer */}
-      <footer className="border-t border-border bg-card px-6 py-6">
-        <div className="mx-auto max-w-lg text-center">
-          <Logo size="sm" />
-          <p className="mt-2 text-xs text-muted-foreground">
+          {/* Minimal footer */}
+          <p className="mt-8 text-center text-[10px] text-muted-foreground">
             © 2026 Welcome Reward. All rights reserved.
           </p>
         </div>
-      </footer>
+      </div>
     </div>
   );
 }

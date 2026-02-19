@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Coins, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function LoginPage() {
   const [phone, setPhone] = useState("");
@@ -18,7 +19,6 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Use phone as email: phone@welcomereward.app
   const phoneToEmail = (ph: string) => {
     const cleaned = ph.replace(/[^0-9]/g, "");
     return `${cleaned}@welcomereward.app`;
@@ -40,13 +40,7 @@ export default function LoginPage() {
       const email = phoneToEmail(phone);
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", data.user.id)
-        .single();
-
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", data.user.id).single();
       if (profile?.role === "superadmin") navigate("/admin");
       else if (profile?.role === "branch") navigate("/branch");
       else navigate("/app");
@@ -84,8 +78,6 @@ export default function LoginPage() {
         },
       });
       if (error) throw error;
-
-      // Auto-confirmed, redirect directly
       if (data.user) {
         toast({ title: "Welcome! 🎉", description: "Your account has been created." });
         navigate("/app");
@@ -98,45 +90,49 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex justify-center">
-          <Logo size="lg" />
+    <div className="min-h-screen bg-background flex flex-col">
+      <div className="safe-area-top" />
+
+      {/* App-style top bar */}
+      <header className="flex items-center gap-3 px-4 py-3">
+        <Link to="/" className="rounded-xl bg-secondary p-2">
+          <ArrowLeft className="h-5 w-5 text-foreground" />
+        </Link>
+        <span className="text-base font-semibold text-foreground">Account</span>
+      </header>
+
+      <div className="flex-1 px-5 pb-8">
+        {/* Mini branding */}
+        <div className="flex flex-col items-center py-6">
+          <div className="h-16 w-16 rounded-[18px] gradient-gold shadow-gold flex items-center justify-center mb-3">
+            <Coins className="h-8 w-8 text-primary-foreground" />
+          </div>
+          <h1 className="font-display text-lg font-bold text-foreground">Welcome Reward</h1>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-card">
+        {/* Auth card */}
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
           <Tabs value={mode} onValueChange={(v) => setMode(v as "login" | "signup")}>
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 mb-5 rounded-xl h-11">
+              <TabsTrigger value="login" className="rounded-lg text-sm">Login</TabsTrigger>
+              <TabsTrigger value="signup" className="rounded-lg text-sm">Sign Up</TabsTrigger>
             </TabsList>
 
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-phone">Mobile Number</Label>
-                  <Input
-                    id="login-phone"
-                    type="tel"
-                    placeholder="9876543210"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required
-                    maxLength={15}
-                  />
+                <div className="space-y-1.5">
+                  <Label htmlFor="login-phone" className="text-xs">Mobile Number</Label>
+                  <Input id="login-phone" type="tel" placeholder="9876543210" value={phone}
+                    onChange={(e) => setPhone(e.target.value)} required maxLength={15}
+                    className="h-12 rounded-xl text-base" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">Password</Label>
-                  <Input
-                    id="login-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
+                <div className="space-y-1.5">
+                  <Label htmlFor="login-password" className="text-xs">Password</Label>
+                  <Input id="login-password" type="password" placeholder="••••••••" value={password}
+                    onChange={(e) => setPassword(e.target.value)} required
+                    className="h-12 rounded-xl text-base" />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full h-12 rounded-xl text-base font-semibold" disabled={loading}>
                   {loading ? "Signing in..." : "Sign In"}
                 </Button>
               </form>
@@ -144,50 +140,31 @@ export default function LoginPage() {
 
             <TabsContent value="signup">
               <form onSubmit={handleSignup} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">Full Name</Label>
-                  <Input
-                    id="signup-name"
-                    placeholder="Your name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                  />
+                <div className="space-y-1.5">
+                  <Label htmlFor="signup-name" className="text-xs">Full Name</Label>
+                  <Input id="signup-name" placeholder="Your name" value={fullName}
+                    onChange={(e) => setFullName(e.target.value)} required
+                    className="h-12 rounded-xl text-base" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-phone">Mobile Number</Label>
-                  <Input
-                    id="signup-phone"
-                    type="tel"
-                    placeholder="9876543210"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required
-                    maxLength={15}
-                  />
+                <div className="space-y-1.5">
+                  <Label htmlFor="signup-phone" className="text-xs">Mobile Number</Label>
+                  <Input id="signup-phone" type="tel" placeholder="9876543210" value={phone}
+                    onChange={(e) => setPhone(e.target.value)} required maxLength={15}
+                    className="h-12 rounded-xl text-base" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    placeholder="Min 6 characters"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                  />
+                <div className="space-y-1.5">
+                  <Label htmlFor="signup-password" className="text-xs">Password</Label>
+                  <Input id="signup-password" type="password" placeholder="Min 6 characters" value={password}
+                    onChange={(e) => setPassword(e.target.value)} required minLength={6}
+                    className="h-12 rounded-xl text-base" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-referral">Referral Code (optional)</Label>
-                  <Input
-                    id="signup-referral"
-                    placeholder="Enter referral code"
-                    value={referralCode}
+                <div className="space-y-1.5">
+                  <Label htmlFor="signup-referral" className="text-xs">Referral Code (optional)</Label>
+                  <Input id="signup-referral" placeholder="Enter referral code" value={referralCode}
                     onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                  />
+                    className="h-12 rounded-xl text-base" />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full h-12 rounded-xl text-base font-semibold" disabled={loading}>
                   {loading ? "Creating account..." : "Create Account"}
                 </Button>
               </form>
@@ -195,7 +172,7 @@ export default function LoginPage() {
           </Tabs>
         </div>
 
-        <p className="mt-4 text-center text-xs text-muted-foreground">
+        <p className="mt-4 text-center text-[10px] text-muted-foreground">
           Admin & Branch staff login with provided mobile number
         </p>
       </div>

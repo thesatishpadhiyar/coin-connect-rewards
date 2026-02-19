@@ -6,7 +6,6 @@
 
 @layer base {
   :root {
-    /* Warm cream/white background */
     --background: 40 33% 98%;
     --foreground: 220 25% 12%;
 
@@ -16,18 +15,15 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 25% 12%;
 
-    /* Gold/Amber primary - coin inspired */
     --primary: 38 92% 50%;
     --primary-foreground: 0 0% 100%;
 
-    /* Warm gray secondary */
     --secondary: 220 14% 96%;
     --secondary-foreground: 220 25% 20%;
 
     --muted: 40 20% 95%;
     --muted-foreground: 220 10% 46%;
 
-    /* Soft amber accent */
     --accent: 38 80% 95%;
     --accent-foreground: 38 92% 35%;
 
@@ -39,7 +35,6 @@
     --ring: 38 92% 50%;
     --radius: 1rem;
 
-    /* Custom tokens */
     --coin-gold: 43 96% 56%;
     --coin-gold-light: 43 96% 92%;
     --success: 152 69% 41%;
@@ -111,7 +106,20 @@
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    overscroll-behavior-y: none;
   }
+  /* Native safe area support */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  /* Hide scrollbar for cleaner native feel */
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+  .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }
 
 @layer utilities {
@@ -138,9 +146,26 @@
     background-size: 200% 100%;
     animation: shimmer 2s ease-in-out infinite;
   }
+  /* Native-like page transitions */
+  .animate-slide-up {
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .animate-fade-in {
+    animation: fadeIn 0.25s ease-out;
+  }
 }
 
 @keyframes shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }

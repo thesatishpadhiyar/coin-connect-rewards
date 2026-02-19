@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
-import { Building2, Plus, UserPlus, Trash2, Search, Coins, MapPin, ToggleLeft, ToggleRight, Pencil, Clock, Upload, Image } from "lucide-react";
+import { Building2, Plus, UserPlus, Trash2, Search, Coins, MapPin, ToggleLeft, ToggleRight, Pencil, Clock, Upload, Image, Copy, Download, Eye, UserMinus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format } from "date-fns";
 
 interface BranchForm {
   name: string;
@@ -52,6 +53,7 @@ export default function AdminBranches() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [editLogoFile, setEditLogoFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [purchasesBranch, setPurchasesBranch] = useState<any>(null);
 
   const { data: branches, isLoading } = useQuery({
     queryKey: ["admin-branches"],
@@ -80,6 +82,22 @@ export default function AdminBranches() {
       (data ?? []).forEach((t: any) => { balances[t.branch_id] = (balances[t.branch_id] || 0) + t.coins; });
       return balances;
     },
+  });
+
+  // Branch purchases
+  const { data: branchPurchases, isLoading: purchasesLoading } = useQuery({
+    queryKey: ["admin-branch-purchases", purchasesBranch?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("purchases")
+        .select("*, customers(referral_code, profiles:user_id(full_name, phone))")
+        .eq("branch_id", purchasesBranch!.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!purchasesBranch,
   });
 
   const uploadLogo = async (file: File, branchId: string): Promise<string | null> => {
@@ -167,6 +185,31 @@ export default function AdminBranches() {
     onError: (err: any) => { setUploading(false); toast({ title: "Error", description: err.message, variant: "destructive" }); },
   });
 
+  const duplicateBranch = useMutation({
+    mutationFn: async (b: any) => {
+      const { id, created_at, logo_url, ...rest } = b;
+      const { error } = await supabase.from("branches").insert({ ...rest, name: `${b.name} (Copy)`, created_by: user!.id });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-branches"] });
+      toast({ title: "Branch duplicated!" });
+    },
+    onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+  });
+
+  const removeAssignedUser = useMutation({
+    mutationFn: async (branchId: string) => {
+      const { error } = await supabase.from("branch_users").delete().eq("branch_id", branchId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-branch-users"] });
+      toast({ title: "User removed from branch!" });
+    },
+    onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+  });
+
   const openEditBranch = (b: any) => {
     setEditForm({
       name: b.name || "", address: b.address || "", city: b.city || "",
@@ -225,6 +268,29 @@ export default function AdminBranches() {
     onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }),
   });
 
+  const exportBranchCSV = () => {
+    if (!branches || branches.length === 0) return;
+    const rows = branches.map((b: any) => ({
+      Name: b.name,
+      Address: b.address || "",
+      City: b.city || "",
+      Phone: b.phone || "",
+      Manager: b.manager_name || "",
+      Active: b.is_active ? "Yes" : "No",
+      "Coin Balance": coinBalances?.[b.id] ?? 0,
+      "Opening": b.opening_time || "",
+      "Closing": b.closing_time || "",
+    }));
+    const headers = Object.keys(rows[0]);
+    const csv = [headers.join(","), ...rows.map(r => headers.map(h => `"${(r as any)[h]}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `branches_${format(new Date(), "yyyy-MM-dd")}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Branches exported!" });
+  };
+
   const getBranchUser = (branchId: string) => branchUsers?.find((bu: any) => bu.branch_id === branchId);
 
   const activeBranches = branches?.filter((b: any) => b.is_active) ?? [];
@@ -256,7 +322,6 @@ export default function AdminBranches() {
         </div>
       </div>
 
-      {/* Basic fields */}
       {[
         { key: "name", label: "Branch Name *" },
         { key: "address", label: "Address" },
@@ -271,7 +336,6 @@ export default function AdminBranches() {
         </div>
       ))}
 
-      {/* Operating hours */}
       <div className="space-y-1">
         <Label className="text-xs flex items-center gap-1"><Clock className="h-3 w-3" /> Operating Hours</Label>
         <div className="grid grid-cols-2 gap-2">
@@ -286,7 +350,6 @@ export default function AdminBranches() {
         </div>
       </div>
 
-      {/* Branch-level coin settings */}
       <div className="space-y-2 rounded-xl border border-border bg-muted/50 p-3">
         <p className="text-xs font-semibold text-foreground flex items-center gap-1"><Coins className="h-3 w-3" /> Custom Coin Settings (optional)</p>
         <p className="text-[10px] text-muted-foreground">Leave blank to use global defaults</p>
@@ -330,6 +393,12 @@ export default function AdminBranches() {
             </div>
           </div>
           <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" title="View Purchases" onClick={() => setPurchasesBranch(b)}>
+              <Eye className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" title="Duplicate Branch" onClick={() => duplicateBranch.mutate(b)}>
+              <Copy className="h-4 w-4" />
+            </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={() => openEditBranch(b)}>
               <Pencil className="h-4 w-4" />
             </Button>
@@ -364,7 +433,6 @@ export default function AdminBranches() {
           </a>
         )}
 
-        {/* Custom coin settings badges */}
         {(b.custom_coin_percent || b.custom_max_coins_per_bill || b.custom_max_redeem_percent) && (
           <div className="flex flex-wrap gap-1 mt-2">
             {b.custom_coin_percent && <Badge variant="secondary" className="text-[10px]">Earn: {b.custom_coin_percent}%</Badge>}
@@ -397,7 +465,26 @@ export default function AdminBranches() {
 
         <div className="mt-3 pt-3 border-t border-border">
           {bu ? (
-            <Badge variant="outline" className="text-xs">👤 {(bu as any).profiles?.full_name || (bu as any).profiles?.phone || "Branch User"}</Badge>
+            <div className="flex items-center justify-between">
+              <Badge variant="outline" className="text-xs">👤 {(bu as any).profiles?.full_name || (bu as any).profiles?.phone || "Branch User"}</Badge>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-destructive hover:text-destructive">
+                    <UserMinus className="h-3 w-3" /> Remove
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Remove assigned user?</AlertDialogTitle>
+                    <AlertDialogDescription>This will unassign the user from "{b.name}". They will lose branch access.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => removeAssignedUser.mutate(b.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Remove</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           ) : (
             <Dialog open={assignOpen === b.id} onOpenChange={(v) => { setAssignOpen(v ? b.id : null); if (!v) { setSearchPhone(""); setFoundUser(null); } }}>
               <DialogTrigger asChild>
@@ -434,18 +521,23 @@ export default function AdminBranches() {
       <div className="animate-fade-in space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-xl font-bold text-foreground">Branches</h2>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-1"><Plus className="h-4 w-4" /> Add Branch</Button>
-            </DialogTrigger>
-            <DialogContent className="max-h-[90vh]">
-              <DialogHeader><DialogTitle>New Branch</DialogTitle></DialogHeader>
-              {renderFormFields(form, setForm, logoFile, setLogoFile)}
-              <Button onClick={() => createBranch.mutate()} disabled={createBranch.isPending || uploading || !form.name} className="w-full mt-2">
-                {createBranch.isPending || uploading ? "Creating..." : "Create Branch"}
-              </Button>
-            </DialogContent>
-          </Dialog>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="gap-1" onClick={exportBranchCSV} disabled={!branches || branches.length === 0}>
+              <Download className="h-4 w-4" /> Export
+            </Button>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-1"><Plus className="h-4 w-4" /> Add Branch</Button>
+              </DialogTrigger>
+              <DialogContent className="max-h-[90vh]">
+                <DialogHeader><DialogTitle>New Branch</DialogTitle></DialogHeader>
+                {renderFormFields(form, setForm, logoFile, setLogoFile)}
+                <Button onClick={() => createBranch.mutate()} disabled={createBranch.isPending || uploading || !form.name} className="w-full mt-2">
+                  {createBranch.isPending || uploading ? "Creating..." : "Create Branch"}
+                </Button>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {isLoading ? (
@@ -486,6 +578,41 @@ export default function AdminBranches() {
             <Button onClick={() => updateBranch.mutate(editOpen!)} disabled={updateBranch.isPending || uploading || !editForm.name} className="w-full mt-2">
               {updateBranch.isPending || uploading ? "Saving..." : "Save Changes"}
             </Button>
+          </DialogContent>
+        </Dialog>
+
+        {/* Branch Purchases Dialog */}
+        <Dialog open={!!purchasesBranch} onOpenChange={(v) => { if (!v) setPurchasesBranch(null); }}>
+          <DialogContent className="max-h-[85vh]">
+            <DialogHeader><DialogTitle>Purchases — {purchasesBranch?.name}</DialogTitle></DialogHeader>
+            <div className="max-h-[60vh] overflow-y-auto space-y-2">
+              {purchasesLoading ? (
+                <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-14 rounded-xl" />)}</div>
+              ) : !branchPurchases || branchPurchases.length === 0 ? (
+                <div className="text-center py-6">
+                  <Building2 className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">No purchases found</p>
+                </div>
+              ) : (
+                branchPurchases.map((p: any) => (
+                  <div key={p.id} className="rounded-xl border border-border bg-muted/50 p-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">₹{Number(p.bill_amount).toLocaleString()}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {(p as any).customers?.profiles?.full_name || "Customer"} · #{p.invoice_no}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-foreground">+{p.earned_coins} <span className="text-muted-foreground">earned</span></p>
+                        {p.redeemed_coins > 0 && <p className="text-xs text-destructive">-{p.redeemed_coins} redeemed</p>}
+                        <p className="text-[10px] text-muted-foreground">{format(new Date(p.created_at), "dd MMM yyyy")}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </DialogContent>
         </Dialog>
       </div>

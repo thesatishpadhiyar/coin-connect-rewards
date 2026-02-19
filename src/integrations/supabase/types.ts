@@ -137,37 +137,55 @@ export type Database = {
         Row: {
           address: string | null
           city: string | null
+          closing_time: string | null
           created_at: string
           created_by: string | null
+          custom_coin_percent: number | null
+          custom_max_coins_per_bill: number | null
+          custom_max_redeem_percent: number | null
           id: string
           is_active: boolean
+          logo_url: string | null
           manager_name: string | null
           map_link: string | null
           name: string
+          opening_time: string | null
           phone: string | null
         }
         Insert: {
           address?: string | null
           city?: string | null
+          closing_time?: string | null
           created_at?: string
           created_by?: string | null
+          custom_coin_percent?: number | null
+          custom_max_coins_per_bill?: number | null
+          custom_max_redeem_percent?: number | null
           id?: string
           is_active?: boolean
+          logo_url?: string | null
           manager_name?: string | null
           map_link?: string | null
           name: string
+          opening_time?: string | null
           phone?: string | null
         }
         Update: {
           address?: string | null
           city?: string | null
+          closing_time?: string | null
           created_at?: string
           created_by?: string | null
+          custom_coin_percent?: number | null
+          custom_max_coins_per_bill?: number | null
+          custom_max_redeem_percent?: number | null
           id?: string
           is_active?: boolean
+          logo_url?: string | null
           manager_name?: string | null
           map_link?: string | null
           name?: string
+          opening_time?: string | null
           phone?: string | null
         }
         Relationships: [

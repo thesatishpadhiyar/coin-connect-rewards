@@ -1,7 +1,7 @@
 import AdminLayout from "@/layouts/AdminLayout";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Building2, Coins, ArrowDownRight, Gift, FileBarChart, ClipboardList } from "lucide-react";
+import { Users, Building2, Coins, ArrowDownRight, Gift, FileBarChart, ClipboardList, GitCompareArrows, Trophy } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -83,7 +83,7 @@ export default function AdminDashboard() {
         {/* Quick Actions */}
         <div>
           <h3 className="text-sm font-semibold text-muted-foreground mb-3">Quick Actions</h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <Button variant="outline" className="h-auto py-4 flex flex-col items-center gap-2 rounded-2xl" onClick={() => navigate("/admin/analytics")}>
               <FileBarChart className="h-5 w-5 text-primary" />
               <span className="text-sm font-medium">Analytics</span>
@@ -92,13 +92,21 @@ export default function AdminDashboard() {
               <ClipboardList className="h-5 w-5 text-primary" />
               <span className="text-sm font-medium">Leaderboard</span>
             </Button>
+            <Button variant="outline" className="h-auto py-4 flex flex-col items-center gap-2 rounded-2xl" onClick={() => navigate("/admin/branch-comparison")}>
+              <GitCompareArrows className="h-5 w-5 text-primary" />
+              <span className="text-sm font-medium">Compare</span>
+            </Button>
+            <Button variant="outline" className="h-auto py-4 flex flex-col items-center gap-2 rounded-2xl" onClick={() => navigate("/admin/bulk-coins")}>
+              <Coins className="h-5 w-5 text-primary" />
+              <span className="text-sm font-medium">Bulk Coins</span>
+            </Button>
+            <Button variant="outline" className="h-auto py-4 flex flex-col items-center gap-2 rounded-2xl" onClick={() => navigate("/admin/referral-leaderboard")}>
+              <Trophy className="h-5 w-5 text-primary" />
+              <span className="text-sm font-medium">Top Referrers</span>
+            </Button>
             <Button variant="outline" className="h-auto py-4 flex flex-col items-center gap-2 rounded-2xl" onClick={() => navigate("/admin/announcements")}>
               <ClipboardList className="h-5 w-5 text-primary" />
-              <span className="text-sm font-medium">Announcements</span>
-            </Button>
-            <Button variant="outline" className="h-auto py-4 flex flex-col items-center gap-2 rounded-2xl" onClick={() => navigate("/admin/referrals")}>
-              <ClipboardList className="h-5 w-5 text-primary" />
-              <span className="text-sm font-medium">Referrals</span>
+              <span className="text-sm font-medium">Announce</span>
             </Button>
           </div>
         </div>

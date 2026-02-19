@@ -55,6 +55,48 @@ export type Database = {
           },
         ]
       }
+      branch_checkins: {
+        Row: {
+          branch_id: string
+          checkin_date: string
+          coins_earned: number
+          created_at: string
+          customer_id: string
+          id: string
+        }
+        Insert: {
+          branch_id: string
+          checkin_date?: string
+          coins_earned?: number
+          created_at?: string
+          customer_id: string
+          id?: string
+        }
+        Update: {
+          branch_id?: string
+          checkin_date?: string
+          coins_earned?: number
+          created_at?: string
+          customer_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "branch_checkins_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "branch_checkins_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       branch_coin_transactions: {
         Row: {
           branch_id: string
@@ -93,6 +135,61 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      branch_reviews: {
+        Row: {
+          branch_id: string
+          coins_earned: number
+          comment: string | null
+          created_at: string
+          customer_id: string
+          id: string
+          purchase_id: string | null
+          rating: number
+        }
+        Insert: {
+          branch_id: string
+          coins_earned?: number
+          comment?: string | null
+          created_at?: string
+          customer_id: string
+          id?: string
+          purchase_id?: string | null
+          rating: number
+        }
+        Update: {
+          branch_id?: string
+          coins_earned?: number
+          comment?: string | null
+          created_at?: string
+          customer_id?: string
+          id?: string
+          purchase_id?: string | null
+          rating?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "branch_reviews_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "branch_reviews_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "branch_reviews_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "purchases"
             referencedColumns: ["id"]
           },
         ]
@@ -284,6 +381,7 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean
+          min_tier: string | null
           title: string
           valid_from: string
           valid_until: string | null
@@ -295,6 +393,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          min_tier?: string | null
           title: string
           valid_from?: string
           valid_until?: string | null
@@ -306,6 +405,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          min_tier?: string | null
           title?: string
           valid_from?: string
           valid_until?: string | null

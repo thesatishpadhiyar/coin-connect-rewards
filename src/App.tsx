@@ -18,6 +18,7 @@ import CustomerPurchases from "./pages/customer/CustomerPurchases";
 import CustomerProfile from "./pages/customer/CustomerProfile";
 import CustomerOffers from "./pages/customer/CustomerOffers";
 import CustomerSpinWheel from "./pages/customer/CustomerSpinWheel";
+import CustomerReviews from "./pages/customer/CustomerReviews";
 
 import BranchDashboard from "./pages/branch/BranchDashboard";
 import BranchNewPurchase from "./pages/branch/BranchNewPurchase";
@@ -28,6 +29,7 @@ import BranchOffers from "./pages/branch/BranchOffers";
 import BranchReturns from "./pages/branch/BranchReturns";
 import BranchStaff from "./pages/branch/BranchStaff";
 import BranchPerformance from "./pages/branch/BranchPerformance";
+import BranchCheckin from "./pages/branch/BranchCheckin";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminBranches from "./pages/admin/AdminBranches";
@@ -39,6 +41,9 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminLeaderboard from "./pages/admin/AdminLeaderboard";
+import AdminBranchComparison from "./pages/admin/AdminBranchComparison";
+import AdminBulkCoins from "./pages/admin/AdminBulkCoins";
+import AdminReferralLeaderboard from "./pages/admin/AdminReferralLeaderboard";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +68,7 @@ const App = () => (
             <Route path="/app/profile" element={<ProtectedRoute allowedRoles={["customer"]}><CustomerProfile /></ProtectedRoute>} />
             <Route path="/app/offers" element={<ProtectedRoute allowedRoles={["customer"]}><CustomerOffers /></ProtectedRoute>} />
             <Route path="/app/spin" element={<ProtectedRoute allowedRoles={["customer"]}><CustomerSpinWheel /></ProtectedRoute>} />
+            <Route path="/app/reviews" element={<ProtectedRoute allowedRoles={["customer"]}><CustomerReviews /></ProtectedRoute>} />
 
             {/* Branch */}
             <Route path="/branch" element={<ProtectedRoute allowedRoles={["branch"]}><BranchDashboard /></ProtectedRoute>} />
@@ -74,6 +80,7 @@ const App = () => (
             <Route path="/branch/returns" element={<ProtectedRoute allowedRoles={["branch"]}><BranchReturns /></ProtectedRoute>} />
             <Route path="/branch/staff" element={<ProtectedRoute allowedRoles={["branch"]}><BranchStaff /></ProtectedRoute>} />
             <Route path="/branch/performance" element={<ProtectedRoute allowedRoles={["branch"]}><BranchPerformance /></ProtectedRoute>} />
+            <Route path="/branch/checkin" element={<ProtectedRoute allowedRoles={["branch"]}><BranchCheckin /></ProtectedRoute>} />
 
             {/* Admin */}
             <Route path="/admin" element={<ProtectedRoute allowedRoles={["superadmin"]}><AdminDashboard /></ProtectedRoute>} />
@@ -86,6 +93,9 @@ const App = () => (
             <Route path="/admin/announcements" element={<ProtectedRoute allowedRoles={["superadmin"]}><AdminAnnouncements /></ProtectedRoute>} />
             <Route path="/admin/analytics" element={<ProtectedRoute allowedRoles={["superadmin"]}><AdminAnalytics /></ProtectedRoute>} />
             <Route path="/admin/leaderboard" element={<ProtectedRoute allowedRoles={["superadmin"]}><AdminLeaderboard /></ProtectedRoute>} />
+            <Route path="/admin/branch-comparison" element={<ProtectedRoute allowedRoles={["superadmin"]}><AdminBranchComparison /></ProtectedRoute>} />
+            <Route path="/admin/bulk-coins" element={<ProtectedRoute allowedRoles={["superadmin"]}><AdminBulkCoins /></ProtectedRoute>} />
+            <Route path="/admin/referral-leaderboard" element={<ProtectedRoute allowedRoles={["superadmin"]}><AdminReferralLeaderboard /></ProtectedRoute>} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

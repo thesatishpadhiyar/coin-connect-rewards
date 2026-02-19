@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, ShoppingBag, FileText, Wallet, LogOut, PlusCircle, Tag, RotateCcw, BarChart3, UserCog } from "lucide-react";
+import { LayoutDashboard, Users, ShoppingBag, FileText, Wallet, LogOut, PlusCircle, Tag, RotateCcw, BarChart3, UserCog, MapPinCheck } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const sideNavItems = [
@@ -11,6 +11,7 @@ const sideNavItems = [
   { to: "/branch/wallet", icon: Wallet, label: "Wallet" },
   { to: "/branch/offers", icon: Tag, label: "Offers" },
   { to: "/branch/returns", icon: RotateCcw, label: "Returns" },
+  { to: "/branch/checkin", icon: MapPinCheck, label: "Check-in" },
   { to: "/branch/performance", icon: BarChart3, label: "Performance" },
   { to: "/branch/staff", icon: UserCog, label: "Staff" },
 ];

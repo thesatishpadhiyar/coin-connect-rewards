@@ -126,7 +126,7 @@ export default function CustomerDashboard() {
         </div>
 
         {/* Actions */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <Link to="/app/referral">
             <div className="rounded-2xl border border-border bg-accent p-4 shadow-card text-center">
               <Gift className="mx-auto h-6 w-6 text-accent-foreground" />
@@ -139,9 +139,15 @@ export default function CustomerDashboard() {
               <p className="mt-1 text-xs font-semibold text-accent-foreground">Spin & Win</p>
             </div>
           </Link>
-          <Link to="/app/wallet">
+          <Link to="/app/reviews">
             <div className="rounded-2xl border border-border bg-accent p-4 shadow-card text-center">
               <TrendingUp className="mx-auto h-6 w-6 text-accent-foreground" />
+              <p className="mt-1 text-xs font-semibold text-accent-foreground">Reviews</p>
+            </div>
+          </Link>
+          <Link to="/app/wallet">
+            <div className="rounded-2xl border border-border bg-accent p-4 shadow-card text-center">
+              <Coins className="mx-auto h-6 w-6 text-accent-foreground" />
               <p className="mt-1 text-xs font-semibold text-accent-foreground">History</p>
             </div>
           </Link>

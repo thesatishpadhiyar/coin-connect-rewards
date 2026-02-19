@@ -2,7 +2,7 @@ import BranchLayout from "@/layouts/BranchLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ShoppingBag, Users, Coins, TrendingUp, Camera, Upload } from "lucide-react";
+import { ShoppingBag, Users, Coins, TrendingUp, Camera, Upload, MapPinCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -103,12 +103,20 @@ export default function BranchDashboard() {
           </div>
         </div>
 
-        <Link to="/branch/purchase/new">
-          <Button size="lg" className="w-full gap-2 rounded-2xl text-base shadow-gold">
-            <ShoppingBag className="h-5 w-5" />
-            New Purchase
-          </Button>
-        </Link>
+        <div className="grid grid-cols-2 gap-3">
+          <Link to="/branch/purchase/new" className="col-span-2">
+            <Button size="lg" className="w-full gap-2 rounded-2xl text-base shadow-gold">
+              <ShoppingBag className="h-5 w-5" />
+              New Purchase
+            </Button>
+          </Link>
+          <Link to="/branch/checkin">
+            <Button variant="outline" className="w-full gap-2 rounded-2xl border-primary/30 text-primary">
+              <MapPinCheck className="h-4 w-4" />
+              QR Check-in
+            </Button>
+          </Link>
+        </div>
 
         {isLoading ? (
           <div className="grid grid-cols-2 gap-3">

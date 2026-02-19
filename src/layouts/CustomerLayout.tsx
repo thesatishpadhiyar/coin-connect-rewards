@@ -1,13 +1,13 @@
 import { ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, Wallet, Gift, Tag, User } from "lucide-react";
+import { Home, Wallet, Gift, Tag, Settings } from "lucide-react";
 
 const navItems = [
   { to: "/app", icon: Home, label: "Home" },
   { to: "/app/wallet", icon: Wallet, label: "Wallet" },
   { to: "/app/referral", icon: Gift, label: "Refer" },
   { to: "/app/offers", icon: Tag, label: "Offers" },
-  { to: "/app/profile", icon: User, label: "Profile" },
+  { to: "/app/settings", icon: Settings, label: "Settings" },
 ];
 
 export default function CustomerLayout({ children }: { children: ReactNode }) {

@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, ShoppingBag, FileText, Wallet, LogOut, PlusCircle, Tag, RotateCcw, BarChart3, UserCog, MapPinCheck } from "lucide-react";
+import { LayoutDashboard, Users, ShoppingBag, FileText, Wallet, LogOut, PlusCircle, Tag, RotateCcw, BarChart3, UserCog, MapPinCheck, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const sideNavItems = [
@@ -14,6 +14,7 @@ const sideNavItems = [
   { to: "/branch/checkin", icon: MapPinCheck, label: "Check-in" },
   { to: "/branch/performance", icon: BarChart3, label: "Performance" },
   { to: "/branch/staff", icon: UserCog, label: "Staff" },
+  { to: "/branch/settings", icon: Settings, label: "Settings" },
 ];
 
 const bottomNavItems = [
@@ -21,7 +22,7 @@ const bottomNavItems = [
   { to: "/branch/offers", icon: Tag, label: "Offers" },
   { to: "/branch/purchase/new", icon: PlusCircle, label: "Add Sale", isCenter: true },
   { to: "/branch/performance", icon: BarChart3, label: "Stats" },
-  { to: "/branch/staff", icon: UserCog, label: "Staff" },
+  { to: "/branch/settings", icon: Settings, label: "Settings" },
 ];
 
 export default function BranchLayout({ children }: { children: ReactNode }) {

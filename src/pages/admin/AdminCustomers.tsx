@@ -2,7 +2,7 @@ import AdminLayout from "@/layouts/AdminLayout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Users, Search, Trash2, Pencil, Ban, CheckCircle, Gift, Coins } from "lucide-react";
+import { Users, Search, Trash2, Pencil, Ban, CheckCircle, Gift, Coins, ShoppingBag, RotateCcw, Download, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 export default function AdminCustomers() {
   const { user } = useAuth();
@@ -24,6 +25,7 @@ export default function AdminCustomers() {
   const [bonusCustomer, setBonusCustomer] = useState<any>(null);
   const [bonusCoins, setBonusCoins] = useState("");
   const [bonusDescription, setBonusDescription] = useState("");
+  const [historyCustomer, setHistoryCustomer] = useState<any>(null);
 
   const { data: customers, isLoading } = useQuery({
     queryKey: ["admin-customers", search],
@@ -50,6 +52,22 @@ export default function AdminCustomers() {
       (data ?? []).forEach((t: any) => { balances[t.customer_id] = (balances[t.customer_id] || 0) + t.coins; });
       return balances;
     },
+  });
+
+  // Purchase history for selected customer
+  const { data: purchaseHistory, isLoading: historyLoading } = useQuery({
+    queryKey: ["admin-customer-purchases", historyCustomer?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("purchases")
+        .select("*, branches(name)")
+        .eq("customer_id", historyCustomer!.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!historyCustomer,
   });
 
   const toggleBlock = useMutation({
@@ -115,6 +133,45 @@ export default function AdminCustomers() {
     onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }),
   });
 
+  const resetWallet = useMutation({
+    mutationFn: async (customer: any) => {
+      const balance = walletBalances?.[customer.id] ?? 0;
+      if (balance <= 0) throw new Error("Wallet is already at 0");
+      const { error } = await supabase.from("wallet_transactions").insert({
+        customer_id: customer.id,
+        type: "ADMIN_RESET",
+        coins: -balance,
+        description: "Wallet reset by admin",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-customer-balances"] });
+      toast({ title: "Wallet reset to 0!" });
+    },
+    onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+  });
+
+  const exportCSV = () => {
+    if (!customers || customers.length === 0) return;
+    const rows = customers.map((c: any) => ({
+      Name: c.profiles?.full_name || "",
+      Phone: c.profiles?.phone || "",
+      "Referral Code": c.referral_code,
+      Balance: walletBalances?.[c.id] ?? 0,
+      Blocked: c.is_blocked ? "Yes" : "No",
+      "Joined": c.profiles?.created_at ? format(new Date(c.profiles.created_at), "dd MMM yyyy") : "",
+    }));
+    const headers = Object.keys(rows[0]);
+    const csv = [headers.join(","), ...rows.map(r => headers.map(h => `"${(r as any)[h]}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `customers_${format(new Date(), "yyyy-MM-dd")}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Customers exported!" });
+  };
+
   const openEdit = (c: any) => {
     setEditCustomer(c);
     setEditName(c.profiles?.full_name || "");
@@ -126,6 +183,9 @@ export default function AdminCustomers() {
       <div className="animate-fade-in space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-xl font-bold text-foreground">Customers</h2>
+          <Button variant="outline" size="sm" className="gap-1" onClick={exportCSV} disabled={!customers || customers.length === 0}>
+            <Download className="h-4 w-4" /> Export CSV
+          </Button>
         </div>
 
         <div className="relative">
@@ -152,11 +212,31 @@ export default function AdminCustomers() {
                       <p className="text-xs text-muted-foreground">📞 {c.profiles?.phone} · Code: {c.referral_code}</p>
                       <p className="text-xs text-muted-foreground mt-1">Balance: <span className="font-semibold text-foreground">{balance} coins</span></p>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 flex-wrap justify-end">
                       {c.is_blocked && <Badge variant="destructive" className="mr-1">Blocked</Badge>}
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" title="View Purchases" onClick={() => setHistoryCustomer(c)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" title="Give Referral Bonus" onClick={() => setBonusCustomer(c)}>
                         <Gift className="h-4 w-4" />
                       </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-warning" title="Reset Wallet" disabled={balance <= 0}>
+                            <RotateCcw className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Reset wallet for {c.profiles?.full_name}?</AlertDialogTitle>
+                            <AlertDialogDescription>This will deduct {balance} coins and set their wallet to 0. This cannot be undone.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => resetWallet.mutate(c)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Reset Wallet</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                       <Button variant="ghost" size="icon" className="h-7 w-7" title={c.is_blocked ? "Unblock" : "Block"} onClick={() => toggleBlock.mutate({ id: c.id, is_blocked: !c.is_blocked })}>
                         {c.is_blocked ? <CheckCircle className="h-4 w-4 text-success" /> : <Ban className="h-4 w-4 text-destructive" />}
                       </Button>
@@ -224,6 +304,39 @@ export default function AdminCustomers() {
                 <Gift className="h-4 w-4" />
                 {assignBonus.isPending ? "Crediting..." : "Credit Referral Bonus"}
               </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Purchase History Dialog */}
+        <Dialog open={!!historyCustomer} onOpenChange={(v) => { if (!v) setHistoryCustomer(null); }}>
+          <DialogContent className="max-h-[85vh]">
+            <DialogHeader><DialogTitle>Purchase History — {historyCustomer?.profiles?.full_name}</DialogTitle></DialogHeader>
+            <div className="max-h-[60vh] overflow-y-auto space-y-2">
+              {historyLoading ? (
+                <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-14 rounded-xl" />)}</div>
+              ) : !purchaseHistory || purchaseHistory.length === 0 ? (
+                <div className="text-center py-6">
+                  <ShoppingBag className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">No purchases found</p>
+                </div>
+              ) : (
+                purchaseHistory.map((p: any) => (
+                  <div key={p.id} className="rounded-xl border border-border bg-muted/50 p-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">₹{Number(p.bill_amount).toLocaleString()}</p>
+                        <p className="text-[10px] text-muted-foreground">{(p as any).branches?.name} · #{p.invoice_no}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-foreground">+{p.earned_coins} <span className="text-muted-foreground">earned</span></p>
+                        {p.redeemed_coins > 0 && <p className="text-xs text-destructive">-{p.redeemed_coins} redeemed</p>}
+                        <p className="text-[10px] text-muted-foreground">{format(new Date(p.created_at), "dd MMM yyyy")}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </DialogContent>
         </Dialog>

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Building2, MapPin, Phone } from "lucide-react";
+import { Building2, MapPin, Phone, ExternalLink } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -46,7 +46,7 @@ export default function BranchesPage() {
             {branches?.map((b: any) => (
               <div key={b.id} className="rounded-2xl border border-border bg-card shadow-card overflow-hidden">
                 {b.logo_url && (
-                  <div className="h-36 w-full overflow-hidden">
+                  <div className="h-24 w-full overflow-hidden">
                     <img src={b.logo_url} alt={b.name} className="h-full w-full object-cover" />
                   </div>
                 )}
@@ -54,16 +54,21 @@ export default function BranchesPage() {
                   <h3 className="font-semibold text-foreground">{b.name}</h3>
                   {b.address && (
                     <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <MapPin className="h-3 w-3" /> {b.address}{b.city ? `, ${b.city}` : ""}
+                      <MapPin className="h-3 w-3 shrink-0" /> {b.address}{b.city ? `, ${b.city}` : ""}
                     </p>
                   )}
                   {b.phone && (
-                    <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Phone className="h-3 w-3" /> {b.phone}
-                    </p>
+                    <a href={`tel:${b.phone}`} className="mt-1 flex items-center gap-1.5 text-xs text-primary hover:underline">
+                      <Phone className="h-3 w-3 shrink-0" /> {b.phone}
+                    </a>
                   )}
                   {b.opening_time && b.closing_time && (
                     <p className="mt-1 text-xs text-muted-foreground">🕐 {b.opening_time?.slice(0,5)} - {b.closing_time?.slice(0,5)}</p>
+                  )}
+                  {b.map_link && (
+                    <a href={b.map_link} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground hover:bg-accent/80 transition-colors">
+                      <ExternalLink className="h-3 w-3" /> View on Map
+                    </a>
                   )}
                 </div>
               </div>

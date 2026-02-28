@@ -54,7 +54,27 @@ export default function AdminCustomers() {
     },
   });
 
-  // Purchase history for selected customer
+  // Customer stats
+  const { data: customerStats } = useQuery({
+    queryKey: ["admin-customer-stats"],
+    queryFn: async () => {
+      const last7 = subDays(new Date(), 7).toISOString();
+      const [total, recent, blocked, referrals] = await Promise.all([
+        supabase.from("customers").select("id", { count: "exact", head: true }),
+        supabase.from("customers").select("id", { count: "exact", head: true }).gte("created_at", last7),
+        supabase.from("customers").select("id", { count: "exact", head: true }).eq("is_blocked", true),
+        supabase.from("referral_rewards").select("id", { count: "exact", head: true }),
+      ]);
+      return {
+        total: total.count ?? 0,
+        recent: recent.count ?? 0,
+        blocked: blocked.count ?? 0,
+        referrals: referrals.count ?? 0,
+      };
+    },
+  });
+
+
   const { data: purchaseHistory, isLoading: historyLoading } = useQuery({
     queryKey: ["admin-customer-purchases", historyCustomer?.id],
     queryFn: async () => {

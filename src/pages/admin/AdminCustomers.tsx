@@ -227,7 +227,12 @@ export default function AdminCustomers() {
           ))}
         </div>
 
-        {isLoading ? (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Search by phone, name or referral code..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+        </div>
+
+
           <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-20 rounded-2xl" />)}</div>
         ) : !customers || customers.length === 0 ? (
           <div className="rounded-2xl border border-border bg-card p-8 text-center">

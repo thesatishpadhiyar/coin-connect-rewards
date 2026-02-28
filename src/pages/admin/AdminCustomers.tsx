@@ -2,7 +2,7 @@ import AdminLayout from "@/layouts/AdminLayout";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Users, Search, Trash2, Pencil, Ban, CheckCircle, Gift, Coins, ShoppingBag, RotateCcw, Download, Eye } from "lucide-react";
+import { Users, Search, Trash2, Pencil, Ban, CheckCircle, Gift, Coins, ShoppingBag, RotateCcw, Download, Eye, Calendar, UserPlus, TrendingUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 
 export default function AdminCustomers() {
   const { user } = useAuth();
